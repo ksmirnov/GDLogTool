@@ -29,6 +29,7 @@ public class FileStorage implements Storage {
     private final String FOLDER_SETTING = "Log Folder = ";
     private final String FOLDER_SIZE_SETTING = "Max Folder Size = ";
     private final String SETTINGS_FILE_NAME = "settings.cfg";
+    private final int MAX_DEPTH = 2;
 
     private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
 
@@ -181,7 +182,7 @@ public class FileStorage implements Storage {
             }
         }
 
-        createFileSystem(logFolder, fileSystem, 0);
+        createFileSystem(logFolder, fileSystem, 1);
         curFolderSize = measureSize(logFolder);
     }
 
@@ -209,7 +210,7 @@ public class FileStorage implements Storage {
     private void createFileSystem(String path, Map<String, Object> fileSystem, int level) {
         File dir = new File(path);
         String[] names = dir.list();
-        if (level == 2) {
+        if (level == MAX_DEPTH) {
             for (String name : names) {
                 File inst = new File(path + "/" + name);
                 fileSystem.put(name, Arrays.asList(inst.list()));
