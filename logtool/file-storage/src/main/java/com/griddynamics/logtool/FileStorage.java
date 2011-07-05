@@ -1,5 +1,8 @@
 package com.griddynamics.logtool;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -15,7 +18,7 @@ public class FileStorage implements Storage {
         this.logFolder = logFolder;
     }
 
-    public void setMaxLogFolderLength(long length) {
+    public void setMaxFolderSize(long length) {
         this.maxFolderSize = length;
     }
 
@@ -23,93 +26,127 @@ public class FileStorage implements Storage {
         return this.lastUpdateTime;
     }
 
-    public FileStorage() throws IOException {
-        File settings = new File("settings.cfg");
-        if (settings.exists()) {
-            BufferedReader reader = new BufferedReader(new FileReader("settings.cfg"));
-            String line = reader.readLine();
-            while (line != null) {
-                if (line.contains("Log Folder = ")) {
-                    logFolder = line.substring(13);
-                }
-                if (line.contains("Max Folder Size = ")) {
-                    maxFolderSize = (long) Integer.parseInt(line.substring(18)) << 40;
-                }
-                line = reader.readLine();
-            }
-            reader.close();
-        }
+    private final String FOLDER_SETTING = "Log Folder = ";
+    private final String FOLDER_SIZE_SETTING = "Max Folder Size = ";
+    private final String SETTINGS_FILE_NAME = "settings.cfg";
 
-        createFileSystem(logFolder, fileSystem);
-    }
+    private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
+
 
     public synchronized void saveLog(String application, String host, String instance,
-            Date date, String message) throws IOException {
+            Date date, String message) {
         if (needToWipe()) {
             wipe();
         }
 
-        fileSystem.put(application, (new HashMap<String, Object>()).put(host,
-                (new HashMap<String, Object>()).put(instance,
-                (new HashMap<String, Object>()).put(constructFileName(date), null))));
-
-        lastUpdateTime = System.currentTimeMillis();
+        Map<String, Object> hosts;
+        List<String> instances;
+        if (fileSystem.containsKey(application)) {
+            hosts = (HashMap<String, Object>) fileSystem.get(application);
+        } else {
+            hosts = new HashMap<String, Object>();
+            fileSystem.put(application, hosts);
+        }
+        if (hosts.containsKey(host)) {
+            instances = (ArrayList<String>) hosts.get(host);
+        } else {
+            instances = new ArrayList<String>();
+            hosts.put(host, instances);
+        }
+        if (!instances.contains(instance)) {
+            instances.add(instance);
+        }
 
         String path = logFolder + "/" + application + "/" + host + "/" + instance;
         File dir = new File(path);
         dir.mkdirs();
         String fileName = path  + "/" + constructFileName(date);
-        FileWriter fileWriter = new FileWriter(fileName, true);
-        fileWriter.append(message);
-        fileWriter.close();
+        try {
+            FileWriter fileWriter = new FileWriter(fileName, true);
+            fileWriter.append(message);
+            fileWriter.close();
+        } catch (IOException ex) {
+            logger.error(ex.getMessage());
+            return;
+        }
 
-        curFolderSize += message.length();
+        File log = new File(fileName);
+        curFolderSize += log.length();
+        lastUpdateTime = System.currentTimeMillis();
     }
 
     public synchronized List<String> getLog(String application, String host,
-            String instance, Date date) throws IOException {
+            String instance, Date date) {
         String logPath = logFolder + "/" + application + "/" + host +
                 "/" + instance + "/" + constructFileName(date);
-        BufferedReader reader = new BufferedReader(new FileReader(logPath));
-        List<String> log = new ArrayList<String>();
-        String line = reader.readLine();
-        while (line != null) {
-            log.add(line);
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(logPath));
+            List<String> log = new ArrayList<String>();
+            String line = reader.readLine();
+            while (line != null) {
+                log.add(line);
+            }
+            return log;
+        } catch (IOException ex) {
+            logger.error(ex.getMessage());
+            return null;
         }
-        return log;
     }
 
     public synchronized void deleteLog(String application, String host,
-            String instance, Date date) throws IOException {
+            String instance, Date date) {
         lastUpdateTime = System.currentTimeMillis();
+        deleteLogFile(application, host, instance, date);
 
-        String logApplication = logFolder + "/" + application;
-        String logHost = !host.equals("-1") ? "/" + host : "";
-        String logInstance = !instance.equals("-1") ? "/" + instance : "";
-        String logName = date != null ? "/" + constructFileName(date) : "";
-        String logPath = logApplication + logHost + logInstance + logName;
-        File log = new File(logPath);
-        log.delete();
+        Map<String, Object> hosts = (HashMap<String, Object>) fileSystem.get(application);;
+        List<String> instances = (ArrayList<String>) hosts.get(host);
 
-        Map<String, Object> hosts, instances, dates;
-        if (host.equals("-1")) {
-            fileSystem.remove(application);
-        } else {
-            hosts = (HashMap<String, Object>)fileSystem.get(application);
-            if (instance.equals("-1")) {
+        String logDir = logFolder + "/" + application + "/" + host + "/" + instance;
+        File dir = new File(logDir);
+        if (dir.list().length == 0) {
+            instances.remove(instance);
+            if (instances.isEmpty()) {
                 hosts.remove(host);
-            } else {
-                instances = (HashMap<String, Object>)hosts.get(host);
-                if (date == null) {
-                    instances.remove(host);
-                } else {
-                    dates = (HashMap<String, Object>)instances.get(instance);
-                    dates.remove(constructFileName(date));
+                if (hosts.isEmpty()) {
+                    fileSystem.remove(application);
                 }
             }
         }
+    }
 
-        curFolderSize -= measureSize(logPath);
+    public synchronized void deleteLog(String application, String host, String instance) {
+        lastUpdateTime = System.currentTimeMillis();
+        deleteLogFile(application, host, instance, null);
+
+        Map<String, Object> hosts = (HashMap<String, Object>) fileSystem.get(application);
+        List<String> instances = (ArrayList<String>) hosts.get(host);
+
+        instances.remove(instance);
+        if (instances.isEmpty()) {
+            hosts.remove(host);
+            if (hosts.isEmpty()) {
+                fileSystem.remove(application);
+            }
+        }
+    }
+
+    public synchronized void deleteLog(String application, String host) {
+        lastUpdateTime = System.currentTimeMillis();
+        deleteLogFile(application, host, "", null);
+
+        Map<String, Object> hosts = (HashMap<String, Object>) fileSystem.get(application);
+
+        hosts.remove(host);
+        if (hosts.isEmpty()) {
+            fileSystem.remove(application);
+        }
+    }
+
+    public synchronized void deleteLog(String application) {
+        lastUpdateTime = System.currentTimeMillis();
+        deleteLogFile(application, "", "", null);
+
+        fileSystem.remove(application);
     }
 
     public synchronized Map<String, Object> getTree() {
@@ -120,6 +157,32 @@ public class FileStorage implements Storage {
         File logs = new File(logFolder + "/" + application + "/" + host + "/"
                 + instance + "/");
         return logs.list();
+    }
+
+    public void initialize() {
+        File settings = new File(SETTINGS_FILE_NAME);
+        if (settings.exists() && settings.isFile()) {
+            try {
+                BufferedReader reader = new BufferedReader(new FileReader(SETTINGS_FILE_NAME));
+                String line = reader.readLine();
+                while (line != null) {
+                    if (line.contains(FOLDER_SETTING)) {
+                        logFolder = line.substring(FOLDER_SETTING.length());
+                    }
+                    if (line.contains(FOLDER_SIZE_SETTING)) {
+                        maxFolderSize = (long) Integer.parseInt(line.substring(FOLDER_SIZE_SETTING.length())) << 40;
+                    }
+                    line = reader.readLine();
+                }
+                reader.close();
+            } catch (IOException ex) {
+                logger.error(ex.getMessage());
+                return;
+            }
+        }
+
+        createFileSystem(logFolder, fileSystem, 0);
+        curFolderSize = measureSize(logFolder);
     }
 
     private String constructFileName(Date date) {
@@ -135,20 +198,27 @@ public class FileStorage implements Storage {
         File root = new File(logFolder);
         File[] files = root.listFiles();
         for (File f : files) {
-            f.delete();
+            if (!f.delete()) {
+                logger.warn("Couldn't delete log file: " + f.getAbsolutePath());
+            }
         }
         curFolderSize = 0;
         fileSystem.clear();
     }
 
-    private void createFileSystem(String path, Map<String, Object> fileSystem) {
+    private void createFileSystem(String path, Map<String, Object> fileSystem, int level) {
         File dir = new File(path);
         String[] names = dir.list();
-        if (dir.isDirectory()) {
+        if (level == 2) {
+            for (String name : names) {
+                File inst = new File(path + "/" + name);
+                fileSystem.put(name, Arrays.asList(inst.list()));
+            }
+        } else {
             for (String name : names) {
                 Map<String, Object> fs = new HashMap<String, Object>();
                 fileSystem.put(name, fs);
-                createFileSystem(path + "/" + name, fs);
+                createFileSystem(path + "/" + name, fs, level + 1);
             }
         }
     }
@@ -165,5 +235,19 @@ public class FileStorage implements Storage {
         } else {
             return dir.length();
         }
+    }
+
+    private void deleteLogFile(String application, String host, String instance, Date date) {
+        String logApplication = logFolder + "/" + application;
+        String logHost = !host.equals("") ? "/" + host : "";
+        String logInstance = !instance.equals("") ? "/" + instance : "";
+        String logName = date != null ? "/" + constructFileName(date) : "";
+        String logPath = logApplication + logHost + logInstance + logName;
+        File log = new File(logPath);
+        if (!log.delete()) {
+            logger.warn("Couldn't delete log file: " + logPath);
+        }
+
+        curFolderSize -= measureSize(logPath);
     }
 }
