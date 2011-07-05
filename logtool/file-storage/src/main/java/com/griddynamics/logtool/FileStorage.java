@@ -6,8 +6,8 @@ import java.util.*;
 
 public class FileStorage implements Storage {
     private String logFolder = "";
-    private long maxFolderLength = (long) 1 << 40;
-    private long curFolderLength = 0;
+    private long maxFolderSize = (long) 1 << 40;
+    private long curFolderSize = 0;
     private Map<String, Object> fileSystem = new HashMap<String, Object>();
     private long lastUpdateTime = System.currentTimeMillis();
 
@@ -16,7 +16,7 @@ public class FileStorage implements Storage {
     }
 
     public void setMaxLogFolderLength(long length) {
-        this.maxFolderLength = length;
+        this.maxFolderSize = length;
     }
 
     public synchronized long getLastUpdateTime() {
@@ -32,8 +32,8 @@ public class FileStorage implements Storage {
                 if (line.contains("Log Folder = ")) {
                     logFolder = line.substring(13);
                 }
-                if (line.contains("Max Folder Length = ")) {
-                    maxFolderLength = Integer.parseInt(line.substring(20));
+                if (line.contains("Max Folder Size = ")) {
+                    maxFolderSize = (long) Integer.parseInt(line.substring(18)) << 40;
                 }
                 line = reader.readLine();
             }
@@ -63,7 +63,7 @@ public class FileStorage implements Storage {
         fileWriter.append(message);
         fileWriter.close();
 
-        curFolderLength += message.length();
+        curFolderSize += message.length();
     }
 
     public synchronized List<String> getLog(String application, String host,
@@ -108,6 +108,8 @@ public class FileStorage implements Storage {
                 }
             }
         }
+
+        curFolderSize -= measureSize(logPath);
     }
 
     public synchronized Map<String, Object> getTree() {
@@ -126,7 +128,7 @@ public class FileStorage implements Storage {
     }
 
     private boolean needToWipe() {
-        return curFolderLength < maxFolderLength;
+        return curFolderSize < maxFolderSize;
     }
 
     private void wipe() {
@@ -135,7 +137,7 @@ public class FileStorage implements Storage {
         for (File f : files) {
             f.delete();
         }
-        curFolderLength = 0;
+        curFolderSize = 0;
         fileSystem.clear();
     }
 
@@ -148,6 +150,20 @@ public class FileStorage implements Storage {
                 fileSystem.put(name, fs);
                 createFileSystem(path + "/" + name, fs);
             }
+        }
+    }
+
+    private long measureSize(String path) {
+        File dir = new File(path);
+        if (dir.isDirectory()) {
+            long res = 0;
+            String[] files = dir.list();
+            for (String file : files) {
+                res += measureSize(path + "/" + file);
+            }
+            return res;
+        } else {
+            return dir.length();
         }
     }
 }
