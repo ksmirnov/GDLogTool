@@ -1,73 +1,56 @@
 package com.griddynamics.logtool;
 
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Required;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class FileStorage implements Storage {
+    private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
+
     private String logFolder = "";
-    private long maxFolderSize = (long) 1 << 40;
+    private long maxFolderSize;
     private long curFolderSize = 0;
-    private Map<String, Object> fileSystem = new HashMap<String, Object>();
+    private Tree fileSystem = new Tree();
     private long lastUpdateTime = System.currentTimeMillis();
 
+    @Required
     public void setLogFolder(String logFolder) {
         this.logFolder = logFolder;
     }
 
+    @Required
     public void setMaxFolderSize(long length) {
-        this.maxFolderSize = length;
+        this.maxFolderSize = length << 20;
     }
 
+    @Override
     public synchronized long getLastUpdateTime() {
         return this.lastUpdateTime;
     }
 
-    private final String FOLDER_SETTING = "Log Folder = ";
-    private final String FOLDER_SIZE_SETTING = "Max Folder Size = ";
-    private final String SETTINGS_FILE_NAME = "settings.cfg";
-    private final int MAX_DEPTH = 2;
-
-    private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
-
-
-    public synchronized void saveLog(String application, String host, String instance,
-            Date date, String message) {
+    @Override
+    public void addMessage(String[] path, String timestamp, String message) {
         if (needToWipe()) {
             wipe();
         }
 
-        Map<String, Object> hosts;
-        List<String> instances;
-        if (fileSystem.containsKey(application)) {
-            hosts = (HashMap<String, Object>) fileSystem.get(application);
-        } else {
-            hosts = new HashMap<String, Object>();
-            fileSystem.put(application, hosts);
-        }
-        if (hosts.containsKey(host)) {
-            instances = (ArrayList<String>) hosts.get(host);
-        } else {
-            instances = new ArrayList<String>();
-            hosts.put(host, instances);
-        }
-        if (!instances.contains(instance)) {
-            instances.add(instance);
-        }
+        addToFileSystem(fileSystem, path);
 
-        String path = logFolder + "/" + application + "/" + host + "/" + instance;
-        File dir = new File(path);
+        String logPath = buildPath(path);
+        File dir = new File(logPath);
         dir.mkdirs();
-        String fileName = path  + "/" + constructFileName(date);
+        String fileName = addToPath(logPath, constructFileName(timestamp));
         try {
             FileWriter fileWriter = new FileWriter(fileName, true);
             fileWriter.append(message);
             fileWriter.close();
         } catch (IOException ex) {
-            logger.error(ex.getMessage());
+            logger.error("IOException occurred: [{}]", ex);
             return;
         }
 
@@ -76,123 +59,133 @@ public class FileStorage implements Storage {
         lastUpdateTime = System.currentTimeMillis();
     }
 
-    public synchronized List<String> getLog(String application, String host,
-            String instance, Date date) {
-        String logPath = logFolder + "/" + application + "/" + host +
-                "/" + instance + "/" + constructFileName(date);
+    @Override
+    public synchronized List<String> getLog(String[] path, String logName) {
+        String logPath = addToPath(buildPath(path), logName);
         try {
             BufferedReader reader = new BufferedReader(new FileReader(logPath));
             List<String> log = new ArrayList<String>();
             String line = reader.readLine();
             while (line != null) {
                 log.add(line);
+                line = reader.readLine();
             }
             return log;
         } catch (IOException ex) {
-            logger.error(ex.getMessage());
+            logger.error("IOException occurred: [{}]", ex);
+            return new ArrayList<String>();
+        }
+    }
+
+    @Override
+    public synchronized void deleteLog(String[] path, String ... names) {
+        String logPath = buildPath(path);
+        if (names.length == 0) {
+            deleteDirectory(path);
+        } else {
+            for (String name : names) {
+                String logAbsolutePath = addToPath(logPath, name);
+                File log = new File(logAbsolutePath);
+                long logSize = log.length();
+                curFolderSize -= logSize;
+                if (!log.delete()) {
+                    curFolderSize += logSize;
+                    logger.error("Couldn't delete log file: " + logAbsolutePath);
+                }
+            }
+            File dir = new File(logPath);
+            if (dir.list().length == 0) {
+                deleteDirectory(path);
+            }
+        }
+
+        lastUpdateTime = System.currentTimeMillis();
+    }
+
+    public void createTreeFromDisk() {
+        fileSystem = createTreeFromDisk(logFolder);
+    }
+
+    private Tree createTreeFromDisk(String path) {
+        File file = new File(path);
+        File[] dirs = file.listFiles();
+        boolean hasOnlyFiles = true;
+        for (int i = 0; i < dirs.length; i++) {
+            if (dirs[i].isDirectory()) hasOnlyFiles = false;
+        }
+        if (hasOnlyFiles) {
             return null;
-        }
-    }
-
-    public synchronized void deleteLog(String application, String host,
-            String instance, Date date) {
-        lastUpdateTime = System.currentTimeMillis();
-        deleteLogFile(application, host, instance, date);
-
-        Map<String, Object> hosts = (HashMap<String, Object>) fileSystem.get(application);;
-        List<String> instances = (ArrayList<String>) hosts.get(host);
-
-        String logDir = logFolder + "/" + application + "/" + host + "/" + instance;
-        File dir = new File(logDir);
-        if (dir.list().length == 0) {
-            instances.remove(instance);
-            if (instances.isEmpty()) {
-                hosts.remove(host);
-                if (hosts.isEmpty()) {
-                    fileSystem.remove(application);
+        } else {
+            Tree node = new Tree();
+            for (File dir : dirs) {
+                if (dir.isDirectory()) {
+                    node.getChildren().put(dir.getName(), createTreeFromDisk(addToPath(path, dir.getName())));
                 }
             }
+            return node;
         }
     }
 
-    public synchronized void deleteLog(String application, String host, String instance) {
-        lastUpdateTime = System.currentTimeMillis();
-        deleteLogFile(application, host, instance, null);
 
-        Map<String, Object> hosts = (HashMap<String, Object>) fileSystem.get(application);
-        List<String> instances = (ArrayList<String>) hosts.get(host);
+    @Override
+    public synchronized Tree getTree(int height, String ... path) {
+        if (height == -1) {
+            return fileSystem;
+        } else if (height == 0) {
+            Tree node = new Tree();
+            File folder = new File(buildPath(path));
+            String[] logs = folder.list();
+            for (String log : logs) {
+                node.getChildren().put(log, null);
+            }
+            return node;
+        } else {
+            Tree node = fileSystem;
+            for (int i = 0; i < path.length; i++) {
+                node = node.getChildren().get(path[i]);
+            }
+            return getTree(height, node);
+        }
+    }
 
-        instances.remove(instance);
-        if (instances.isEmpty()) {
-            hosts.remove(host);
-            if (hosts.isEmpty()) {
-                fileSystem.remove(application);
+    private Tree getTree(int height, Tree curNode) {
+        if (curNode == null) return null;
+        Tree node = new Tree(curNode);
+        for (String key : curNode.getChildren().keySet()) {
+            if (height > 0) {
+                node.getChildren().put(key, getTree(height - 1, curNode.getChildren().get(key)));
+            } else {
+                node.getChildren().put(key, null);
             }
         }
+        return node;
     }
 
-    public synchronized void deleteLog(String application, String host) {
-        lastUpdateTime = System.currentTimeMillis();
-        deleteLogFile(application, host, "", null);
-
-        Map<String, Object> hosts = (HashMap<String, Object>) fileSystem.get(application);
-
-        hosts.remove(host);
-        if (hosts.isEmpty()) {
-            fileSystem.remove(application);
+    private void addToFileSystem(Tree curNode, String ... path) {
+        if (path.length == 1) {
+            curNode.getChildren().put(path[0], null);
+            return;
         }
-    }
-
-    public synchronized void deleteLog(String application) {
-        lastUpdateTime = System.currentTimeMillis();
-        deleteLogFile(application, "", "", null);
-
-        fileSystem.remove(application);
-    }
-
-    public synchronized Map<String, Object> getTree() {
-        return fileSystem;
-    }
-
-    public synchronized String[] getSubTree(String application, String host, String instance) {
-        File logs = new File(logFolder + "/" + application + "/" + host + "/"
-                + instance + "/");
-        return logs.list();
-    }
-
-    public void initialize() {
-        File settings = new File(SETTINGS_FILE_NAME);
-        if (settings.exists() && settings.isFile()) {
-            try {
-                BufferedReader reader = new BufferedReader(new FileReader(SETTINGS_FILE_NAME));
-                String line = reader.readLine();
-                while (line != null) {
-                    if (line.contains(FOLDER_SETTING)) {
-                        logFolder = line.substring(FOLDER_SETTING.length());
-                    }
-                    if (line.contains(FOLDER_SIZE_SETTING)) {
-                        maxFolderSize = (long) Integer.parseInt(line.substring(FOLDER_SIZE_SETTING.length())) << 40;
-                    }
-                    line = reader.readLine();
-                }
-                reader.close();
-            } catch (IOException ex) {
-                logger.error(ex.getMessage());
-                return;
-            }
+        if (curNode.getChildren().containsKey(path[0])) {
+            addToFileSystem(curNode.getChildren().get(path[0]), getSubPath(path));
+        } else {
+            Tree node = new Tree();
+            curNode.getChildren().put(path[0], node);
+            addToFileSystem(node, getSubPath(path));
         }
 
-        createFileSystem(logFolder, fileSystem, 1);
-        curFolderSize = measureSize(logFolder);
     }
 
-    private String constructFileName(Date date) {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd MMM");
-        return simpleDateFormat.format(date) + ".log";
+    private String[] getUpPath(String ... path) {
+        return Arrays.copyOf(path, path.length - 1);
+    }
+
+    private String[] getSubPath(String ... path) {
+        return Arrays.copyOfRange(path, 1, path.length);
     }
 
     private boolean needToWipe() {
-        return curFolderSize < maxFolderSize;
+        return curFolderSize > maxFolderSize;
     }
 
     private void wipe() {
@@ -200,28 +193,11 @@ public class FileStorage implements Storage {
         File[] files = root.listFiles();
         for (File f : files) {
             if (!f.delete()) {
-                logger.warn("Couldn't delete log file: " + f.getAbsolutePath());
+                logger.error("Couldn't delete log file: " + f.getAbsolutePath());
             }
         }
         curFolderSize = 0;
-        fileSystem.clear();
-    }
-
-    private void createFileSystem(String path, Map<String, Object> fileSystem, int level) {
-        File dir = new File(path);
-        String[] names = dir.list();
-        if (level == MAX_DEPTH) {
-            for (String name : names) {
-                File inst = new File(path + "/" + name);
-                fileSystem.put(name, Arrays.asList(inst.list()));
-            }
-        } else {
-            for (String name : names) {
-                Map<String, Object> fs = new HashMap<String, Object>();
-                fileSystem.put(name, fs);
-                createFileSystem(path + "/" + name, fs, level + 1);
-            }
-        }
+        fileSystem.getChildren().clear();
     }
 
     private long measureSize(String path) {
@@ -238,17 +214,46 @@ public class FileStorage implements Storage {
         }
     }
 
-    private void deleteLogFile(String application, String host, String instance, Date date) {
-        String logApplication = logFolder + "/" + application;
-        String logHost = !host.equals("") ? "/" + host : "";
-        String logInstance = !instance.equals("") ? "/" + instance : "";
-        String logName = date != null ? "/" + constructFileName(date) : "";
-        String logPath = logApplication + logHost + logInstance + logName;
-        File log = new File(logPath);
-        if (!log.delete()) {
-            logger.warn("Couldn't delete log file: " + logPath);
-        }
+    private void deleteDirectory(String ... path) {
+        if (path.length > 0) {
+            String logPath = buildPath(path);
+            long logDirSize = measureSize(logPath);
 
-        curFolderSize -= measureSize(logPath);
+            File log = new File(logPath);
+            if (!log.delete()) {
+                logger.error("Couldn't delete directory: " + logPath);
+            } else {
+                curFolderSize -= logDirSize;
+                Tree node = fileSystem;
+                for (int i = 0; i < path.length - 1; i++) {
+                    node = node.getChildren().get(path[i]);
+                }
+                node.getChildren().remove(path[path.length - 1]);
+            }
+
+            String[] upPath = getUpPath(path);
+            logPath = buildPath(upPath);
+            log = new File(logPath);
+            if (log.list().length == 0) {
+                deleteDirectory(upPath);
+            }
+        }
+    }
+
+    private String buildPath(String ... path) {
+        StringBuilder result = new StringBuilder(logFolder);
+        for (int i=0; i < path.length; i++) {
+            result.append("/").append(path[i]);
+        }
+        return result.toString();
+    }
+
+    private String addToPath(String path, String subPath) {
+        return new StringBuilder(path).append("/").append(subPath).toString();
+    }
+
+    private String constructFileName(String timestamp) {
+        DateTime dateTime = new DateTime(timestamp);
+        return new StringBuilder().append(dateTime.getYear()).append(" ").append(dateTime.getDayOfMonth()).append(" ").append(dateTime.monthOfYear().getAsShortText()).append(".log").toString();
     }
 }
