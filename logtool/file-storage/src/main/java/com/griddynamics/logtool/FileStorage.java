@@ -34,7 +34,7 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public void addMessage(String[] path, String timestamp, String message) {
+    public synchronized void addMessage(String[] path, String timestamp, String message) {
         if (needToWipe()) {
             wipe();
         }
@@ -48,6 +48,7 @@ public class FileStorage implements Storage {
         try {
             FileWriter fileWriter = new FileWriter(fileName, true);
             fileWriter.append(message);
+            fileWriter.flush();
             fileWriter.close();
         } catch (IOException ex) {
             logger.error("IOException occurred: [{}]", ex);
@@ -206,7 +207,7 @@ public class FileStorage implements Storage {
             long res = 0;
             String[] files = dir.list();
             for (String file : files) {
-                res += measureSize(path + "/" + file);
+                res += measureSize(addToPath(path,file));
             }
             return res;
         } else {
@@ -243,13 +244,13 @@ public class FileStorage implements Storage {
     private String buildPath(String ... path) {
         StringBuilder result = new StringBuilder(logFolder);
         for (int i=0; i < path.length; i++) {
-            result.append("/").append(path[i]);
+            result.append(File.separator).append(path[i]);
         }
         return result.toString();
     }
 
     private String addToPath(String path, String subPath) {
-        return new StringBuilder(path).append("/").append(subPath).toString();
+        return new StringBuilder(path).append(File.separator).append(subPath).toString();
     }
 
     private String constructFileName(String timestamp) {
