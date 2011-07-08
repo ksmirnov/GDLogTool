@@ -4,7 +4,7 @@
     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean id="fileStorageConfigurator" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-        <property name="locations" value="classpath:\fileStorage.properties" />
+        <property name="locations" value="classpath:fileStorage.properties" />
     </bean>
     <bean id="fileStorage" class="com.griddynamics.logtool.FileStorage">
         <property name="logFolder" value="${logFolder}"/>

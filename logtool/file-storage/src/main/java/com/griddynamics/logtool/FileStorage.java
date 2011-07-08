@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
 
 import java.io.*;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class FileStorage implements Storage {
@@ -43,16 +42,26 @@ public class FileStorage implements Storage {
 
         String logPath = buildPath(path);
         File dir = new File(logPath);
-        dir.mkdirs();
-        String fileName = addToPath(logPath, constructFileName(timestamp));
-        try {
-            FileWriter fileWriter = new FileWriter(fileName, true);
-            fileWriter.append(message);
-            fileWriter.flush();
-            fileWriter.close();
-        } catch (IOException ex) {
-            logger.error("IOException occurred: [{}]", ex);
+        if (!dir.mkdirs()) {
+            logger.error("Couldn't create directory: " + logPath);
             return;
+        }
+        String fileName = addToPath(logPath, constructFileName(timestamp));
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter(fileName, true);
+            fileWriter.append(message);
+
+        } catch (IOException ex) {
+            logger.error("Tried to append message to: " + fileName, ex);
+            return;
+        } finally {
+            try {
+                fileWriter.flush();
+                fileWriter.close();
+            } catch (IOException ex) {
+                logger.error("Tried to close file: " + fileName, ex);
+            }
         }
 
         File log = new File(fileName);
@@ -73,7 +82,7 @@ public class FileStorage implements Storage {
             }
             return log;
         } catch (IOException ex) {
-            logger.error("IOException occurred: [{}]", ex);
+            logger.error("Tried to read log file: " + logPath, ex);
             return new ArrayList<String>();
         }
     }
@@ -242,7 +251,7 @@ public class FileStorage implements Storage {
     }
 
     private String buildPath(String ... path) {
-        StringBuilder result = new StringBuilder(logFolder);
+        StringBuffer result = new StringBuffer(logFolder);
         for (int i=0; i < path.length; i++) {
             result.append(File.separator).append(path[i]);
         }
@@ -250,11 +259,11 @@ public class FileStorage implements Storage {
     }
 
     private String addToPath(String path, String subPath) {
-        return new StringBuilder(path).append(File.separator).append(subPath).toString();
+        return new StringBuffer(path).append(File.separator).append(subPath).toString();
     }
 
     private String constructFileName(String timestamp) {
         DateTime dateTime = new DateTime(timestamp);
-        return new StringBuilder().append(dateTime.getYear()).append(" ").append(dateTime.getDayOfMonth()).append(" ").append(dateTime.monthOfYear().getAsShortText()).append(".log").toString();
+        return new StringBuffer().append(dateTime.getYear()).append("-").append(dateTime.dayOfMonth().getAsShortText()).append("-").append(dateTime.monthOfYear().getAsShortText()).append(".log").toString();
     }
 }

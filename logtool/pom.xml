@@ -11,6 +11,10 @@
 
     <properties>
         <projectVersion>1.0-SNAPSHOT</projectVersion>
+        <springVersion>3.0.5.RELEASE</springVersion>
+        <jodaTimeVersion>1.6.2</jodaTimeVersion>
+        <logbackVersion>0.9.29</logbackVersion>
+        <slf4jVersion>1.6.1</slf4jVersion>
     </properties>
 
     <dependencyManagement>

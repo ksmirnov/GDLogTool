@@ -10,7 +10,7 @@ public interface Storage {
     /**
      * This method adds one log message to an existing log file or creates
      * appropriate log file and prints in it
-     * @param path - Array of path separators
+     * @param path - Array of path segments
      * @param timestamp - Time of log message
      * @param message - Log message
      */
@@ -18,7 +18,7 @@ public interface Storage {
 
     /**
      * This method reads text of appropriate log file and returns it as List<String>
-     * @param path - Array of path separators
+     * @param path - Array of path segments
      * @param logName - Log file name
      * @return - Log file text divided by lines and presented as List<String>
      */
@@ -27,7 +27,7 @@ public interface Storage {
     /**
      * This method deletes appropriate log file (or files if array has more than
      * one element, or entirely all folder if array is empty)
-     * @param path - Array of path separators
+     * @param path - Array of path segments
      * @param names - Array of log file names
      */
     void deleteLog(String[] path, String ... names);
@@ -35,7 +35,7 @@ public interface Storage {
     /**
      * This method returns storage structure for servlet's UI.
      * If height equals -1 and path is empty it returns all storage structure.
-     * @param path - Array of path separators which navigates
+     * @param path - Array of path segments which navigates
      * to necessary node of storage structure
      * @param height - Height indicates how deep to take subtree
      * @return - Appropriate subtree of storage structure
