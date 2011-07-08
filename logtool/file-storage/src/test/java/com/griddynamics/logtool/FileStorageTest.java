@@ -23,7 +23,7 @@ public class FileStorageTest {
         BeanFactory factory = new ClassPathXmlApplicationContext("fileStorageConfiguration.xml");
         FileStorage fileStorage = (FileStorage) factory.getBean("fileStorage");
 
-        String[] path1 = {"app", "host", "inst1", "day", "hour"};
+        String[] path1 = {"app", "host", "inst1", "", null, "day", null, "hour"};
         String[] path2 = {"app", "host", "inst2", "day", "hour"};
         String[] path3 = {"app", "host1", "inst", "day", "hour"};
         String[] path4 = {"app1", "host"};
@@ -50,12 +50,14 @@ public class FileStorageTest {
         assertEquals(expectedList, fileStorage.getLog(path1, logName1));
         fileStorage.deleteLog(path1, logName1);
 
-        //Incorrect get log, delete log, get tree
+        //Incorrect get log, delete log, get tree, date format
         fileStorage.addMessage(path1, logDate1, logMsg);
         fileStorage.getLog(path1, logName2);
         fileStorage.deleteLog(path1, logName2);
         Tree tree = fileStorage.getTree(1, path2);
         assertEquals(new Tree().getChildren(), tree.getChildren());
+        fileStorage.addMessage(path1, "date", "msg");
+        fileStorage.deleteLog(path1, "default.log");
 
 
         //getTree test
@@ -82,14 +84,14 @@ public class FileStorageTest {
         Set<String> expectedSet1 = new HashSet<String>();
         Set<String> expectedSet2 = new HashSet<String>();
         Set<String> expectedSet3 = new HashSet<String>();
-        expectedSet1.add(path1[3]);
+        expectedSet1.add(path1[5]);
         expectedSet1.add(path2[3]);
-        expectedSet2.add(path1[4]);
+        expectedSet2.add(path1[7]);
         expectedSet3.add(path2[4]);
         assertEquals(expectedSet1, subTree.getChildren().keySet());
-        assertEquals(expectedSet2, subTree.getChildren().get(path1[3]).getChildren().keySet());
+        assertEquals(expectedSet2, subTree.getChildren().get(path1[5]).getChildren().keySet());
         assertEquals(expectedSet3, subTree.getChildren().get(path2[3]).getChildren().keySet());
-        assertEquals(null, subTree.getChildren().get(path1[3]).getChildren().get(path1[4]));
+        assertEquals(null, subTree.getChildren().get(path1[5]).getChildren().get(path1[4]));
 
         allTree.getChildren().clear();
         fileStorage.createTreeFromDisk();
@@ -99,9 +101,9 @@ public class FileStorageTest {
         assertEquals(2, allTree.getChildren().get(path1[0]).getChildren().get(path1[1]).getChildren().keySet().size());
         assertEquals(null, allTree.getChildren().get(path4[0]).getChildren().get(path4[1]));
         assertEquals(expectedSet1, subTree.getChildren().keySet());
-        assertEquals(expectedSet2, subTree.getChildren().get(path1[3]).getChildren().keySet());
+        assertEquals(expectedSet2, subTree.getChildren().get(path1[5]).getChildren().keySet());
         assertEquals(expectedSet3, subTree.getChildren().get(path2[3]).getChildren().keySet());
-        assertEquals(null, subTree.getChildren().get(path1[3]).getChildren().get(path1[4]));
+        assertEquals(null, subTree.getChildren().get(path1[5]).getChildren().get(path1[7]));
 
         //Delete test
         String[] deletePath = new String[2];

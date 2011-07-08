@@ -38,7 +38,9 @@ public class FileStorage implements Storage {
             wipe();
         }
 
-        String logPath = buildPath(path);
+        String[] clearPath = removeNullAndEmptyPathSegments(path);
+
+        String logPath = buildPath(clearPath);
         File dir = new File(logPath);
         dir.mkdirs();
         String fileName = addToPath(logPath, constructFileName(timestamp));
@@ -60,7 +62,7 @@ public class FileStorage implements Storage {
             }
         }
 
-        addToFileSystem(fileSystem, path);
+        addToFileSystem(fileSystem, clearPath);
         File log = new File(fileName);
         curFolderSize += log.length();
         lastUpdateTime = System.currentTimeMillis();
@@ -68,7 +70,8 @@ public class FileStorage implements Storage {
 
     @Override
     public synchronized List<String> getLog(String[] path, String logName) {
-        String logPath = addToPath(buildPath(path), logName);
+        String[] clearPath = removeNullAndEmptyPathSegments(path);
+        String logPath = addToPath(buildPath(clearPath), logName);
         try {
             BufferedReader reader = new BufferedReader(new FileReader(logPath));
             List<String> log = new ArrayList<String>();
@@ -86,9 +89,10 @@ public class FileStorage implements Storage {
 
     @Override
     public synchronized void deleteLog(String[] path, String ... names) {
-        String logPath = buildPath(path);
+        String[] clearPath = removeNullAndEmptyPathSegments(path);
+        String logPath = buildPath(clearPath);
         if (names.length == 0) {
-            deleteDirectory(path);
+            deleteDirectory(clearPath);
         } else {
             for (String name : names) {
                 String logAbsolutePath = addToPath(logPath, name);
@@ -102,7 +106,7 @@ public class FileStorage implements Storage {
             }
             File dir = new File(logPath);
             if (dir.list().length == 0) {
-                deleteDirectory(path);
+                deleteDirectory(clearPath);
             }
         }
 
@@ -139,21 +143,22 @@ public class FileStorage implements Storage {
         if (height == -1) {
             return fileSystem;
         } else if (height == 0) {
+            String[] clearPath = removeNullAndEmptyPathSegments(path);
             Tree node = new Tree();
-            File folder = new File(buildPath(path));
+            File folder = new File(buildPath(clearPath));
             String[] logs = folder.list();
             for (String log : logs) {
                 node.getChildren().put(log, null);
             }
             return node;
         } else {
+            String[] clearPath = removeNullAndEmptyPathSegments(path);
             Tree node = fileSystem;
-            for (int i = 0; i < path.length; i++) {
-                if (node.getChildren().containsKey(path[i])
-                        && node.getChildren().get(path[i]) != null) {
-                    node = node.getChildren().get(path[i]);
+            for (int i = 0; i < clearPath.length; i++) {
+                if (node.getChildren().containsKey(clearPath[i])) {
+                    node = node.getChildren().get(clearPath[i]);
                 } else {
-                    logger.error("Couldn't found path: " + buildPath(path));
+                    logger.error("Couldn't found path: " + buildPath(clearPath));
                     return new Tree();
                 }
             }
@@ -278,7 +283,22 @@ public class FileStorage implements Storage {
     }
 
     private String constructFileName(String timestamp) {
-        DateTime dateTime = new DateTime(timestamp);
-        return new StringBuffer().append(dateTime.getYear()).append("-").append(dateTime.dayOfMonth().getAsShortText()).append("-").append(dateTime.monthOfYear().getAsShortText()).append(".log").toString();
+        try {
+            DateTime dateTime = new DateTime(timestamp);
+            return new StringBuffer().append(dateTime.getYear()).append("-").append(dateTime.dayOfMonth().getAsShortText()).append("-").append(dateTime.monthOfYear().getAsShortText()).append(".log").toString();
+        } catch (Exception ex) {
+            logger.error("Couldn't parse date format: " + timestamp, ex);
+            return "default.log";
+        }
+    }
+
+    private String[] removeNullAndEmptyPathSegments(String[] path) {
+        List<String> pathList = new ArrayList<String>();
+        for(String pathSegment : path) {
+            if (pathSegment != null && pathSegment.replace(" ", "").length() > 0) {
+                pathList.add(pathSegment);
+            }
+        }
+        return pathList.toArray(new String[pathList.size()]);
     }
 }
