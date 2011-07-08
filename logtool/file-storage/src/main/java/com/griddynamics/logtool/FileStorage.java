@@ -38,14 +38,9 @@ public class FileStorage implements Storage {
             wipe();
         }
 
-        addToFileSystem(fileSystem, path);
-
         String logPath = buildPath(path);
         File dir = new File(logPath);
-        if (!dir.mkdirs()) {
-            logger.error("Couldn't create directory: " + logPath);
-            return;
-        }
+        dir.mkdirs();
         String fileName = addToPath(logPath, constructFileName(timestamp));
         FileWriter fileWriter = null;
         try {
@@ -61,9 +56,11 @@ public class FileStorage implements Storage {
                 fileWriter.close();
             } catch (IOException ex) {
                 logger.error("Tried to close file: " + fileName, ex);
+                return;
             }
         }
 
+        addToFileSystem(fileSystem, path);
         File log = new File(fileName);
         curFolderSize += log.length();
         lastUpdateTime = System.currentTimeMillis();
@@ -152,7 +149,13 @@ public class FileStorage implements Storage {
         } else {
             Tree node = fileSystem;
             for (int i = 0; i < path.length; i++) {
-                node = node.getChildren().get(path[i]);
+                if (node.getChildren().containsKey(path[i])
+                        && node.getChildren().get(path[i]) != null) {
+                    node = node.getChildren().get(path[i]);
+                } else {
+                    logger.error("Couldn't found path: " + buildPath(path));
+                    return new Tree();
+                }
             }
             return getTree(height, node);
         }
@@ -202,8 +205,8 @@ public class FileStorage implements Storage {
         File root = new File(logFolder);
         File[] files = root.listFiles();
         for (File f : files) {
-            if (!f.delete()) {
-                logger.error("Couldn't delete log file: " + f.getAbsolutePath());
+            if (!deleteDirectory(f)) {
+                logger.error("Couldn't delete directory: " + f.getAbsolutePath());
             }
         }
         curFolderSize = 0;
@@ -230,7 +233,7 @@ public class FileStorage implements Storage {
             long logDirSize = measureSize(logPath);
 
             File log = new File(logPath);
-            if (!log.delete()) {
+            if (!deleteDirectory(log)) {
                 logger.error("Couldn't delete directory: " + logPath);
             } else {
                 curFolderSize -= logDirSize;
@@ -250,9 +253,21 @@ public class FileStorage implements Storage {
         }
     }
 
+    private boolean deleteDirectory(File dir) {
+        if (dir.isDirectory()) {
+            String[] children = dir.list();
+            for (String child : children) {
+                if (!deleteDirectory(new File(addToPath(dir.getAbsolutePath(), child)))) {
+                    return false;
+                }
+            }
+        }
+        return dir.delete();
+    }
+
     private String buildPath(String ... path) {
         StringBuffer result = new StringBuffer(logFolder);
-        for (int i=0; i < path.length; i++) {
+        for (int i = 0; i < path.length; i++) {
             result.append(File.separator).append(path[i]);
         }
         return result.toString();

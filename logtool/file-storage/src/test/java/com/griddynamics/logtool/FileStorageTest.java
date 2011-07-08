@@ -7,6 +7,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.io.File;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -16,38 +17,111 @@ import static org.junit.Assert.*;
 public class FileStorageTest {
     private static final Logger logger = LoggerFactory.getLogger(FileStorageTest.class);
 
+
     @Test
     public void testFileStorage() {
         BeanFactory factory = new ClassPathXmlApplicationContext("fileStorageConfiguration.xml");
         FileStorage fileStorage = (FileStorage) factory.getBean("fileStorage");
-        String[] path1 = {"app1", "host1", "inst1", "day1", "hour1"};
-        String[] path2 = {"app1", "host1", "inst2", "day2", "hour2", "sec3"};
-        String[] path3 = {"app2", "host1", "inst1"};
-        String[] path4 = {"app2", "host1", "inst1"};
-        fileStorage.addMessage(path1, "2004-12-13", "log1\n");
-        fileStorage.addMessage(path2, "2005-12-13", "log2\n");
-        fileStorage.addMessage(path3, "2004-12-13", "log3\n");
-        fileStorage.addMessage(path4, "2004-12-13", "log4\n");
-        fileStorage.addMessage(path1, "2006-10-13", "log2\n");
-        fileStorage.deleteLog(path4, "2004 13 Dec.log");
-        logger.debug(fileStorage.getLog(path1, "2004 13 Dec.log").toString());
 
-        //fileStorage.createTreeFromDisk();
+        String[] path1 = {"app", "host", "inst1", "day", "hour"};
+        String[] path2 = {"app", "host", "inst2", "day", "hour"};
+        String[] path3 = {"app", "host1", "inst", "day", "hour"};
+        String[] path4 = {"app1", "host"};
 
-        Tree fs = fileStorage.getTree(-1);
-        logger.debug(fs.getChildren().keySet().toString());
-        logger.debug(fs.getChildren().get("app1").getChildren().get("host1").getChildren().keySet().toString());
-        fs = fileStorage.getTree(0, path1);
-        logger.debug(fs.getChildren().keySet().toString());
-        fs = fileStorage.getTree(1, "app1");
-        Tree node = fs;
-        StringBuilder sb = new StringBuilder();
-        while (node != null) {
-            String key =(String) node.getChildren().keySet().toArray()[0];
-            node = node.getChildren().get(key);
-            sb.append("/").append(key);
+        String logDate1 = "2011-12-12";
+        String logDate2 = "2011-5-5";
+
+        String logName1 = "2011-12-Dec.log";
+        String logName2 = "2011-5-May.log";
+
+        String logMsg = "log";
+
+
+        //Simple add-delete test
+        fileStorage.addMessage(path4, logDate2, logMsg);
+        fileStorage.deleteLog(path4, logName2);
+        assertFalse(new File("logs/" + path4[0]).exists());
+
+        //Append test and getLog test
+        fileStorage.addMessage(path1, logDate1, logMsg);
+        fileStorage.addMessage(path1, logDate1, logMsg);
+        List<String> expectedList = new ArrayList<String>();
+        expectedList.add(logMsg + logMsg);
+        assertEquals(expectedList, fileStorage.getLog(path1, logName1));
+        fileStorage.deleteLog(path1, logName1);
+
+        //Incorrect get log, delete log, get tree
+        fileStorage.addMessage(path1, logDate1, logMsg);
+        fileStorage.getLog(path1, logName2);
+        fileStorage.deleteLog(path1, logName2);
+        Tree tree = fileStorage.getTree(1, path2);
+        assertEquals(new Tree().getChildren(), tree.getChildren());
+
+
+        //getTree test
+        fileStorage.addMessage(path1, logDate1, logMsg);
+        fileStorage.addMessage(path2, logDate1, logMsg);
+        fileStorage.addMessage(path3, logDate1, logMsg);
+        fileStorage.addMessage(path4, logDate1, logMsg);
+        fileStorage.addMessage(path1, logDate2, logMsg);
+        fileStorage.addMessage(path2, logDate2, logMsg);
+        fileStorage.addMessage(path3, logDate2, logMsg);
+
+        Tree allTree = fileStorage.getTree(-1);
+        assertEquals(allTree.getChildren().keySet().size(), 2);
+        assertEquals(allTree.getChildren().get(path1[0]).getChildren().get(path1[1]).getChildren().keySet().size(), 2);
+        assertEquals(allTree.getChildren().get(path4[0]).getChildren().get(path4[1]), null);
+
+        Tree fileNames = fileStorage.getTree(0, path1);
+        Tree expectedTree = new Tree();
+        expectedTree.getChildren().put(logName1, null);
+        expectedTree.getChildren().put(logName2, null);
+        assertEquals(expectedTree.getChildren(), fileNames.getChildren());
+
+        Tree subTree = fileStorage.getTree(1, Arrays.copyOfRange(path1, 0, 3));
+        Set<String> expectedSet1 = new HashSet<String>();
+        Set<String> expectedSet2 = new HashSet<String>();
+        Set<String> expectedSet3 = new HashSet<String>();
+        expectedSet1.add(path1[3]);
+        expectedSet1.add(path2[3]);
+        expectedSet2.add(path1[4]);
+        expectedSet3.add(path2[4]);
+        assertEquals(expectedSet1, subTree.getChildren().keySet());
+        assertEquals(expectedSet2, subTree.getChildren().get(path1[3]).getChildren().keySet());
+        assertEquals(expectedSet3, subTree.getChildren().get(path2[3]).getChildren().keySet());
+        assertEquals(subTree.getChildren().get(path1[3]).getChildren().get(path1[4]), null);
+
+        allTree.getChildren().clear();
+        fileStorage.createTreeFromDisk();
+        allTree = fileStorage.getTree(-1);
+        subTree = fileStorage.getTree(1, Arrays.copyOfRange(path1, 0, 3));
+        assertEquals(allTree.getChildren().keySet().size(), 2);
+        assertEquals(allTree.getChildren().get(path1[0]).getChildren().get(path1[1]).getChildren().keySet().size(), 2);
+        assertEquals(allTree.getChildren().get(path4[0]).getChildren().get(path4[1]), null);
+        assertEquals(expectedSet1, subTree.getChildren().keySet());
+        assertEquals(expectedSet2, subTree.getChildren().get(path1[3]).getChildren().keySet());
+        assertEquals(expectedSet3, subTree.getChildren().get(path2[3]).getChildren().keySet());
+        assertEquals(subTree.getChildren().get(path1[3]).getChildren().get(path1[4]), null);
+
+        //Delete test
+        String[] clearPath = new String[1];
+        clearPath[0] = path1[0];
+        fileStorage.deleteLog(clearPath);
+        clearPath[0] = path4[0];
+        fileStorage.deleteLog(clearPath);
+        assertEquals(new File("logs").list().length, 0);
+
+        //Wipe test
+        long size = (((long) 1 << 20) + 15) / 5;
+        StringBuffer sb = new StringBuffer();
+        for (long i = 0; i < size; i++) {
+            sb.append("qwerty");
         }
-        logger.debug(sb.toString());
-        assertTrue(true);
+        fileStorage.addMessage(path1, logDate1, sb.toString());
+        fileStorage.addMessage(path1, logDate1, "wipe!");
+        List<String> expectedList2 = new ArrayList<String>();
+        expectedList2.add("wipe!");
+        assertEquals(expectedList2, fileStorage.getLog(path1, logName1));
+        fileStorage.deleteLog(path1, logName1);
     }
 }
