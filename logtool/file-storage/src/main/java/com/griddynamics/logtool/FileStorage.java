@@ -180,7 +180,9 @@ public class FileStorage implements Storage {
     }
 
     private void addToFileSystem(Tree curNode, String ... path) {
-        if (path.length == 1) {
+        if (path.length == 0) {
+            return;
+        } else if (path.length == 1) {
             curNode.getChildren().put(path[0], null);
             return;
         }

@@ -58,6 +58,8 @@ public class FileStorageTest {
         assertEquals(new Tree().getChildren(), tree.getChildren());
         fileStorage.addMessage(path1, "date", "msg");
         fileStorage.deleteLog(path1, "default.log");
+        fileStorage.addMessage(new String[0], "2000-12-12", "");
+        fileStorage.deleteLog(new String[0], "2000-12-Dec.log");
 
 
         //getTree test
