@@ -68,9 +68,9 @@ public class FileStorageTest {
         fileStorage.addMessage(path3, logDate2, logMsg);
 
         Tree allTree = fileStorage.getTree(-1);
-        assertEquals(allTree.getChildren().keySet().size(), 2);
-        assertEquals(allTree.getChildren().get(path1[0]).getChildren().get(path1[1]).getChildren().keySet().size(), 2);
-        assertEquals(allTree.getChildren().get(path4[0]).getChildren().get(path4[1]), null);
+        assertEquals(2, allTree.getChildren().keySet().size());
+        assertEquals(2, allTree.getChildren().get(path1[0]).getChildren().get(path1[1]).getChildren().keySet().size());
+        assertEquals(null, allTree.getChildren().get(path4[0]).getChildren().get(path4[1]));
 
         Tree fileNames = fileStorage.getTree(0, path1);
         Tree expectedTree = new Tree();
@@ -89,27 +89,35 @@ public class FileStorageTest {
         assertEquals(expectedSet1, subTree.getChildren().keySet());
         assertEquals(expectedSet2, subTree.getChildren().get(path1[3]).getChildren().keySet());
         assertEquals(expectedSet3, subTree.getChildren().get(path2[3]).getChildren().keySet());
-        assertEquals(subTree.getChildren().get(path1[3]).getChildren().get(path1[4]), null);
+        assertEquals(null, subTree.getChildren().get(path1[3]).getChildren().get(path1[4]));
 
         allTree.getChildren().clear();
         fileStorage.createTreeFromDisk();
         allTree = fileStorage.getTree(-1);
         subTree = fileStorage.getTree(1, Arrays.copyOfRange(path1, 0, 3));
-        assertEquals(allTree.getChildren().keySet().size(), 2);
-        assertEquals(allTree.getChildren().get(path1[0]).getChildren().get(path1[1]).getChildren().keySet().size(), 2);
-        assertEquals(allTree.getChildren().get(path4[0]).getChildren().get(path4[1]), null);
+        assertEquals(2, allTree.getChildren().keySet().size());
+        assertEquals(2, allTree.getChildren().get(path1[0]).getChildren().get(path1[1]).getChildren().keySet().size());
+        assertEquals(null, allTree.getChildren().get(path4[0]).getChildren().get(path4[1]));
         assertEquals(expectedSet1, subTree.getChildren().keySet());
         assertEquals(expectedSet2, subTree.getChildren().get(path1[3]).getChildren().keySet());
         assertEquals(expectedSet3, subTree.getChildren().get(path2[3]).getChildren().keySet());
-        assertEquals(subTree.getChildren().get(path1[3]).getChildren().get(path1[4]), null);
+        assertEquals(null, subTree.getChildren().get(path1[3]).getChildren().get(path1[4]));
 
         //Delete test
+        String[] deletePath = new String[2];
+        deletePath[0] = path1[0];
+        deletePath[1] = path1[1];
+        fileStorage.deleteLog(deletePath);
+        allTree = fileStorage.getTree(-1);
+        Tree node = allTree.getChildren().get(path1[0]);
+        assertEquals(null, node.getChildren().get(path1[1]));
+
         String[] clearPath = new String[1];
         clearPath[0] = path1[0];
         fileStorage.deleteLog(clearPath);
         clearPath[0] = path4[0];
         fileStorage.deleteLog(clearPath);
-        assertEquals(new File("logs").list().length, 0);
+        assertEquals(0, new File("logs").list().length);
 
         //Wipe test
         long size = (((long) 1 << 20) + 15) / 5;
