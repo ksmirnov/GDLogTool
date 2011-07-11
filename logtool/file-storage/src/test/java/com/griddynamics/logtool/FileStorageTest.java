@@ -36,7 +36,6 @@ public class FileStorageTest {
 
         String logMsg = "log";
 
-
         //Simple add-delete test
         fileStorage.addMessage(path4, logDate2, logMsg);
         fileStorage.deleteLog(path4, logName2);
@@ -46,7 +45,8 @@ public class FileStorageTest {
         fileStorage.addMessage(path1, logDate1, logMsg);
         fileStorage.addMessage(path1, logDate1, logMsg);
         List<String> expectedList = new ArrayList<String>();
-        expectedList.add(logMsg + logMsg);
+        expectedList.add(logMsg);
+        expectedList.add(logMsg);
         assertEquals(expectedList, fileStorage.getLog(path1, logName1));
         fileStorage.deleteLog(path1, logName1);
 

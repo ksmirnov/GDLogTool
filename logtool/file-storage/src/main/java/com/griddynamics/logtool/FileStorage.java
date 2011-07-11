@@ -48,7 +48,7 @@ public class FileStorage implements Storage {
         try {
             fileWriter = new FileWriter(fileName, true);
             fileWriter.append(message);
-
+            fileWriter.append("\n");
         } catch (IOException ex) {
             logger.error("Tried to append message to: " + fileName, ex);
             return;
@@ -295,8 +295,11 @@ public class FileStorage implements Storage {
     }
 
     private String[] removeNullAndEmptyPathSegments(String[] path) {
+        if (path == null) {
+            return new String[0];
+        }
         List<String> pathList = new ArrayList<String>();
-        for(String pathSegment : path) {
+        for (String pathSegment : path) {
             if (pathSegment != null && pathSegment.replace(" ", "").length() > 0) {
                 pathList.add(pathSegment);
             }
