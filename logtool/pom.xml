@@ -11,6 +11,11 @@
 
     <properties>
         <projectVersion>1.0-SNAPSHOT</projectVersion>
+        <springVersion>3.0.5.RELEASE</springVersion>
+        <jodaTimeVersion>1.6.2</jodaTimeVersion>
+        <logbackVersion>0.9.29</logbackVersion>
+        <slf4jVersion>1.6.1</slf4jVersion>
+        <junitVersion>4.8.2</junitVersion>
     </properties>
 
     <dependencyManagement>
@@ -35,6 +40,40 @@
                 <artifactId>web-ui</artifactId>
                 <version>${projectVersion}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-beans</artifactId>
+                <version>${springVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context</artifactId>
+                <version>${springVersion}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4jVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logbackVersion}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>joda-time</groupId>
+                <artifactId>joda-time</artifactId>
+                <version>${jodaTimeVersion}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junitVersion}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -44,14 +83,6 @@
         <module>file-storage</module>
         <module>web-ui</module>
     </modules>
-
-    <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.2</version>
-        </dependency>
-    </dependencies>
 
     <build>
         <plugins>
