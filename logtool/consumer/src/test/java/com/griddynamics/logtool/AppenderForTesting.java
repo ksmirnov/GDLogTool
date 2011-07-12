@@ -30,11 +30,11 @@ public class AppenderForTesting extends AppenderSkeleton {
     }
 
     public void setApplication(String lapp) {
-    this.application = lapp;
+        this.application = lapp;
     }
 
     public String getApplication() {
-    return application;
+        return application;
     }
 
     

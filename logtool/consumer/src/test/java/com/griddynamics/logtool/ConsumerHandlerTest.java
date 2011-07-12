@@ -32,20 +32,28 @@ public class ConsumerHandlerTest {
         MessageEvent testMessage = new MessageEvent() {
 
             @Override
-            public Object getMessage() {return testEvent;}
+            public Object getMessage() {
+                return testEvent;
+            }
 
             @Override
-            public SocketAddress getRemoteAddress() {return new InetSocketAddress(4444);}
+            public SocketAddress getRemoteAddress() {
+                return new InetSocketAddress(4444);
+            }
 
             @Override
-            public Channel getChannel() {return null;}
+            public Channel getChannel() {
+                return null;
+            }
 
             @Override
-            public ChannelFuture getFuture() {return null;}
+            public ChannelFuture getFuture() {
+                return null;
+            }
         };
         try {
             handlerInstance.messageReceived(null, testMessage);
-            verify(mockedStorage).addMessage(any(strArray.getClass()), anyString(), anyString());
+            verify(mockedStorage).addMessage(any(strArray.getClass()), anyString(), eq("THIS IS TEST MESSAGE"));
         } catch (IllegalArgumentException e) {
             fail("Illegal argument");
         }
@@ -53,28 +61,18 @@ public class ConsumerHandlerTest {
     }
 
     @Test
-    public void testParseString() {
+    public void testGetApplication() {
         final LoggingEvent testEvent = AppenderForTesting.getLastMessage();
         Storage mockedStorage = mock(Storage.class);
         ConsumerHandler handlerInstance = new ConsumerHandler(mockedStorage);
-        MessageEvent testMessage = new MessageEvent() {
+        assertEquals(handlerInstance.getApplication(testEvent), "testApp");
+    }
 
-            @Override
-            public Object getMessage() {return testEvent;}
-
-            @Override
-            public SocketAddress getRemoteAddress() {return new InetSocketAddress(4444);}
-
-            @Override
-            public Channel getChannel() {return null;}
-
-            @Override
-            public ChannelFuture getFuture() {return null;}
-        };
-        String[] recieved = handlerInstance.parseMessage(testMessage);
-        assertTrue(recieved.length == 3);
-        for(String s : recieved) {
-            assertTrue(s != null && !s.equals(""));
-        }
+    @Test
+    public void testGetInstance() {
+        final LoggingEvent testEvent = AppenderForTesting.getLastMessage();
+        Storage mockedStorage = mock(Storage.class);
+        ConsumerHandler handlerInstance = new ConsumerHandler(mockedStorage);
+        assertEquals(handlerInstance.getInstance(testEvent), "testInstance");
     }
 }

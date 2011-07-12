@@ -15,14 +15,15 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 
+import java.net.InetSocketAddress;
 import java.util.StringTokenizer;
 
 public class ConsumerHandler extends SimpleChannelHandler {
     private static final Logger logger = LoggerFactory.getLogger(ConsumerHandler.class);
 
-    private final static String EMPTY = "(default)";
-    private final static String DELIM = ".";
+    private static final String DELIM = ".";
 
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
     private final Storage storage;
 
     public ConsumerHandler(Storage storage) {
@@ -35,37 +36,53 @@ public class ConsumerHandler extends SimpleChannelHandler {
      */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws IllegalArgumentException {
-        if (e.getMessage() instanceof LoggingEvent) {
-            DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
-            String message = ((LoggingEvent) e.getMessage()).getMessage().toString();
-            String[] entry = parseMessage(e);
-            DateTime date = new DateTime(((LoggingEvent) e.getMessage()).timeStamp);
+        String host;
+        if(e.getRemoteAddress() instanceof InetSocketAddress) {
+            host = ((InetSocketAddress) e.getRemoteAddress()).getHostName();
+        } else {
+            host = e.getRemoteAddress().toString();
+        }
+        if(e.getMessage() instanceof LoggingEvent) {
+            LoggingEvent loggingEvent = (LoggingEvent) e.getMessage();
+            String message = loggingEvent.getMessage().toString();
+            DateTime date = new DateTime(loggingEvent.timeStamp);
             String timestamp = date.toString(dateTimeFormatter);
+            String[] entry = new String[3];
+            entry[0] = getApplication(loggingEvent);
+            entry[1] = host;
+            entry[2] = getInstance(loggingEvent);
             storage.addMessage(entry, timestamp, message);
-        } else throw new IllegalArgumentException("argument is not instance of LoggingEvent");
+        } else {
+            throw new IllegalArgumentException("argument is not instance of LoggingEvent");
+        }
     }
 
     /**
-     * Method to parse recieved object
-     * @throws IllegalArgumentException
+     * Gets application name from log4j logging event
+     * @param event the log4j LoggingEvent
+     * @return the string containing application name
      */
-    protected String[] parseMessage(MessageEvent e) {
-        String[] out = new String[3];
-        if (e.getMessage() instanceof LoggingEvent) {
-            LoggingEvent loggingEvent = (LoggingEvent) e.getMessage();
-            String app = loggingEvent.getProperty("application");
-            if (app != null && app.length() > 0) {
-                StringTokenizer st = new StringTokenizer(app, DELIM);
-                if(st.countTokens() <= 2) {
-                    out[0] = st.nextToken();
-                    if (st.hasMoreTokens()) out[2] = st.nextToken();
-                    else out[2] = EMPTY;
-                } else throw new IllegalArgumentException("illegal application / instance");
-            } else out[0] = out[2] = EMPTY;
-            out[1] = e.getRemoteAddress().toString();
-            out[1] = out[1].substring(2, out[1].indexOf(':'));
-        } else throw new IllegalArgumentException("argument is not instance of LoggingEvent");
+    protected String getApplication(LoggingEvent event) {
+        String out = event.getProperty("application");
+        if(out.length() > 1 && out.indexOf(DELIM) > 0) {
+            out = out.substring(0, out.indexOf(DELIM));
+        }
         return out;
+    }
+
+     /**
+     * Gets application instance name from log4j logging event
+     * @param event the log4j LoggingEvent
+     * @return the string containing application instance name
+     */
+    protected String getInstance(LoggingEvent event) {
+        String out = event.getProperty("application");
+        if(out.length() > 1 && out.indexOf(DELIM) > 0) {
+            out = out.substring(out.indexOf(DELIM) + 1);
+            return out;
+        } else {
+            return null;
+        }
     }
 
     /**

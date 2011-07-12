@@ -11,11 +11,14 @@ import org.jboss.netty.handler.codec.frame.FrameDecoder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
-import java.io.ObjectStreamConstants;
+
+import static java.io.ObjectStreamConstants.STREAM_MAGIC;
+import static java.io.ObjectStreamConstants.STREAM_VERSION;
 
 public class LogEventDecoder extends FrameDecoder {
-
     private static final Logger logger = LoggerFactory.getLogger(LogEventDecoder.class);
+
+    private static final int HEADER = (STREAM_MAGIC<<16) + STREAM_VERSION;
 
     private final ByteArrayOutputStream cache = new ByteArrayOutputStream();
 
@@ -33,22 +36,16 @@ public class LogEventDecoder extends FrameDecoder {
         Object out = null;
         ByteArrayInputStream inputStream;
         if(cache.size() == 0) {
-            buffer.markReaderIndex();
-            short s0 = ObjectStreamConstants.STREAM_MAGIC;
-            short s1 = ObjectStreamConstants.STREAM_VERSION;
-            if(buffer.readable()) {
-                if(buffer.readShort() != s0) {
-                    for(byte b : getBytes(s0)) {
-                        cache.write(b);
+            try {
+                if(buffer.getInt(0) != HEADER) {
+                    for(int i = 3; i >= 0; i --) {
+                        cache.write(HEADER >> (i * 8));
                     }
                 }
-                if(buffer.readShort() != s1) {
-                    for(byte b : getBytes(s1)) {
-                        cache.write(b);
-                    }
-                }
+            } catch (IndexOutOfBoundsException e) {
+                logger.trace(e.getMessage(), e);
+                return null;
             }
-            buffer.resetReaderIndex();
         }
         while(buffer.readable()) {
             cache.write(buffer.readByte());
