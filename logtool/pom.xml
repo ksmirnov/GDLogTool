@@ -9,6 +9,16 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <repositories>
+        <repository>
+            <id>repository.jboss.org</id>
+            <url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <projectVersion>1.0-SNAPSHOT</projectVersion>
         <springVersion>3.0.5.RELEASE</springVersion>
@@ -16,6 +26,9 @@
         <logbackVersion>0.9.29</logbackVersion>
         <slf4jVersion>1.6.1</slf4jVersion>
         <junitVersion>4.8.2</junitVersion>
+        <nettyVersion>3.2.4.Final</nettyVersion>
+        <log4jVersion>1.2.16</log4jVersion>
+        <mockitoVersion>1.8.5</mockitoVersion>
     </properties>
 
     <dependencyManagement>
@@ -53,6 +66,12 @@
             </dependency>
 
             <dependency>
+                <groupId>org.jboss.netty</groupId>
+                <artifactId>netty</artifactId>
+                <version>${nettyVersion}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4jVersion}</version>
@@ -61,6 +80,11 @@
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
                 <version>${logbackVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>${log4jVersion}</version>
             </dependency>
 
             <dependency>
@@ -73,6 +97,11 @@
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junitVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>${mockitoVersion}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
