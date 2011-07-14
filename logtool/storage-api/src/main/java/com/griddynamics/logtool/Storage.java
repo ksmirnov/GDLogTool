@@ -1,6 +1,8 @@
 package com.griddynamics.logtool;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Storage interface provides to Consumer possibility to add log message to
@@ -25,12 +27,17 @@ public interface Storage {
     List<String> getLog(String[] path, String logName);
 
     /**
-     * This method deletes appropriate log file (or files if array has more than
-     * one element, or entirely all folder if array is empty)
+     * This method deletes appropriate log file.
      * @param path - Array of path segments
-     * @param names - Array of log file names
+     * @param name - Log file name
      */
-    void deleteLog(String[] path, String ... names);
+    void deleteLog(String[] path, String name);
+
+    /**
+     * This method deletes appropriate log folder.
+     * @param path - Array of path segments
+     */
+    void deleteDirectory(String path[]);
 
     /**
      * This method returns storage structure for servlet's UI.
@@ -48,4 +55,47 @@ public interface Storage {
      * @return - Last storage update time
      */
     long getLastUpdateTime();
+
+    /**
+     * This method subscribes user for alerts of messages satisfying specified
+     * filter recorded in the form of regular expression.
+     * @param filter - filter for alerts
+     * @param emailAddress - email address to which to send alerts
+     */
+    void subscribe(String filter, String emailAddress);
+
+    /**
+     * This method unsubscribes user for alerts of messages satisfying specified
+     * filter recorded in the form of regular expression.
+     * @param filter - filter for alerts
+     * @param emailAddress - email address to which to send alerts
+     */
+    void unsubscribe(String filter, String emailAddress);
+
+    /**
+     * This method returns all current subscribers for all current filter
+     * represented as map with filter as key and HashSet's of users emails as values.
+     * @return - all current subscribers for all current filter
+     */
+    Map<String, HashSet<String>> getSubscribers();
+
+    /**
+     * This method removes from file storage alert filter
+     * recorded in the form of regular expression.
+     * @param filter - filter for alerts
+     */
+    void removeFilter(String filter);
+
+    /**
+     * This method returns all alerts occurred after starting service
+     * @return - all occurred alerts represented as map with filters as keys and all messages as HashSet value.
+     */
+    Map<String, HashSet<String>> getAlerts();
+
+    /**
+     * This method removes specified alert from file storage.
+     * @param filter - triggered filter
+     * @param message - message which satisfied filter
+     */
+    void removeAlert(String filter, String message);
 }

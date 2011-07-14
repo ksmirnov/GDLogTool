@@ -1,21 +1,34 @@
 package com.griddynamics.logtool;
 
+import org.apache.commons.mail.Email;
+import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.SimpleEmail;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class FileStorage implements Storage {
     private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
+    private static final String ALERTING_EMAIL = "gdlogtool@gmail.com";
+    private static final String ALERTING_PSWD = "lLiWKuXEVl";
+    private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormat.forPattern("yyyy-dd-MMM");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("HH:mm:ss ");
 
+    private boolean isFirstStart = true;
     private String logFolder = "";
     private long maxFolderSize;
     private long curFolderSize = 0;
     private Tree fileSystem = new Tree();
     private long lastUpdateTime = System.currentTimeMillis();
+    private Map<String, HashSet<String>> subscribers = new HashMap<String, HashSet<String>>();
+    private Map<String, HashSet<String>> alerts = new HashMap<String, HashSet<String>>();
 
     @Required
     public void setLogFolder(String logFolder) {
@@ -33,7 +46,59 @@ public class FileStorage implements Storage {
     }
 
     @Override
+    public synchronized void subscribe(String filter, String emailAddress) {
+        if (!isNullOrEmptyString(filter) && !isNullOrEmptyString(emailAddress)) {
+            if (!subscribers.containsKey(filter)) {
+                addFilter(filter);
+            }
+            subscribers.get(filter).add(emailAddress);
+        }
+    }
+
+    @Override
+    public synchronized void unsubscribe(String filter, String emailAddress) {
+        if (!isNullOrEmptyString(filter) && !isNullOrEmptyString(emailAddress)) {
+            subscribers.get(filter).remove(emailAddress);
+            if (subscribers.get(filter).size() == 0) {
+                subscribers.remove(filter);
+            }
+        }
+    }
+
+    @Override
+    public synchronized Map<String, HashSet<String>> getSubscribers() {
+        return subscribers;
+    }
+
+    @Override
+    public synchronized void removeFilter(String filter) {
+        if (!isNullOrEmptyString(filter)) {
+            subscribers.remove(filter);
+            if (alerts.containsKey(filter)) {
+                alerts.remove(filter);
+            }
+        }
+    }
+
+    @Override
+    public synchronized Map<String, HashSet<String>> getAlerts() {
+        return alerts;
+    }
+
+    @Override
+    public synchronized void removeAlert(String filter, String message) {
+        if (!isNullOrEmptyString(filter) && !isNullOrEmptyString(message)) {
+            alerts.get(filter).remove(message);
+        }
+    }
+
+    @Override
     public synchronized void addMessage(String[] path, String timestamp, String message) {
+        if (isFirstStart) {
+            createTreeFromDisk();
+            isFirstStart = false;
+        }
+
         if (needToWipe()) {
             wipe();
         }
@@ -45,9 +110,12 @@ public class FileStorage implements Storage {
         dir.mkdirs();
         String fileName = addToPath(logPath, constructFileName(timestamp));
         FileWriter fileWriter = null;
+        File log = new File(fileName);
+        long size = log.length();
+        String messageWithTime = createMessage(message, timestamp);
         try {
             fileWriter = new FileWriter(fileName, true);
-            fileWriter.append(message);
+            fileWriter.append(messageWithTime);
             fileWriter.append("\n");
         } catch (IOException ex) {
             logger.error("Tried to append message to: " + fileName, ex);
@@ -63,9 +131,11 @@ public class FileStorage implements Storage {
         }
 
         addToFileSystem(fileSystem, clearPath);
-        File log = new File(fileName);
-        curFolderSize += log.length();
+
+        curFolderSize += (log.length() - size);
         lastUpdateTime = System.currentTimeMillis();
+
+        checkForAlerts(message, fileName, timestamp);
     }
 
     @Override
@@ -88,58 +158,64 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public synchronized void deleteLog(String[] path, String ... names) {
+    public synchronized void deleteLog(String[] path, String name) {
+        if (isNullOrEmptyString(name)) {
+            return;
+        }
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String logPath = buildPath(clearPath);
-        if (names.length == 0) {
+        String logAbsolutePath = addToPath(logPath, name);
+        File log = new File(logAbsolutePath);
+        long logSize = log.length();
+        curFolderSize -= logSize;
+        if (!log.delete()) {
+            curFolderSize += logSize;
+            logger.error("Couldn't delete log file: " + logAbsolutePath);
+        }
+        File dir = new File(logPath);
+        if (dir.list().length == 0) {
             deleteDirectory(clearPath);
-        } else {
-            for (String name : names) {
-                String logAbsolutePath = addToPath(logPath, name);
-                File log = new File(logAbsolutePath);
-                long logSize = log.length();
-                curFolderSize -= logSize;
-                if (!log.delete()) {
-                    curFolderSize += logSize;
-                    logger.error("Couldn't delete log file: " + logAbsolutePath);
-                }
-            }
-            File dir = new File(logPath);
-            if (dir.list().length == 0) {
-                deleteDirectory(clearPath);
-            }
         }
 
         lastUpdateTime = System.currentTimeMillis();
     }
 
-    public void createTreeFromDisk() {
-        fileSystem = createTreeFromDisk(logFolder);
-    }
-
-    private Tree createTreeFromDisk(String path) {
-        File file = new File(path);
-        File[] dirs = file.listFiles();
-        boolean hasOnlyFiles = true;
-        for (int i = 0; i < dirs.length; i++) {
-            if (dirs[i].isDirectory()) hasOnlyFiles = false;
+    @Override
+    public synchronized void deleteDirectory(String ... path) {
+        String[] clearPath = removeNullAndEmptyPathSegments(path);
+        if (clearPath.length == 0) {
+            return;
         }
-        if (hasOnlyFiles) {
-            return null;
+        String logPath = buildPath(clearPath);
+        long logDirSize = measureSize(logPath);
+
+        File log = new File(logPath);
+        if (!deleteDirectory(log)) {
+            logger.error("Couldn't delete directory: " + logPath);
         } else {
-            Tree node = new Tree();
-            for (File dir : dirs) {
-                if (dir.isDirectory()) {
-                    node.getChildren().put(dir.getName(), createTreeFromDisk(addToPath(path, dir.getName())));
-                }
+            curFolderSize -= logDirSize;
+            Tree node = fileSystem;
+            for (int i = 0; i < clearPath.length - 1; i++) {
+                node = node.getChildren().get(clearPath[i]);
             }
-            return node;
+            node.getChildren().remove(clearPath[clearPath.length - 1]);
+        }
+
+        String[] upPath = getUpPath(clearPath);
+        logPath = buildPath(upPath);
+        log = new File(logPath);
+        if (log.list().length == 0) {
+            deleteDirectory(upPath);
         }
     }
-
 
     @Override
     public synchronized Tree getTree(int height, String ... path) {
+        if (isFirstStart) {
+            createTreeFromDisk();
+            isFirstStart = false;
+        }
+
         if (height == -1) {
             return fileSystem;
         } else if (height == 0) {
@@ -196,6 +272,34 @@ public class FileStorage implements Storage {
 
     }
 
+
+    private void createTreeFromDisk() {
+        fileSystem = createTreeFromDisk(logFolder);
+    }
+
+    private Tree createTreeFromDisk(String path) {
+        File file = new File(path);
+        File[] dirs = file.listFiles();
+        if (dirs == null) {
+            return new Tree();
+        }
+        boolean hasOnlyFiles = true;
+        for (int i = 0; i < dirs.length; i++) {
+            if (dirs[i].isDirectory()) hasOnlyFiles = false;
+        }
+        if (hasOnlyFiles) {
+            return null;
+        } else {
+            Tree node = new Tree();
+            for (File dir : dirs) {
+                if (dir.isDirectory()) {
+                    node.getChildren().put(dir.getName(), createTreeFromDisk(addToPath(path, dir.getName())));
+                }
+            }
+            return node;
+        }
+    }
+
     private String[] getUpPath(String ... path) {
         return Arrays.copyOf(path, path.length - 1);
     }
@@ -234,32 +338,6 @@ public class FileStorage implements Storage {
         }
     }
 
-    private void deleteDirectory(String ... path) {
-        if (path.length > 0) {
-            String logPath = buildPath(path);
-            long logDirSize = measureSize(logPath);
-
-            File log = new File(logPath);
-            if (!deleteDirectory(log)) {
-                logger.error("Couldn't delete directory: " + logPath);
-            } else {
-                curFolderSize -= logDirSize;
-                Tree node = fileSystem;
-                for (int i = 0; i < path.length - 1; i++) {
-                    node = node.getChildren().get(path[i]);
-                }
-                node.getChildren().remove(path[path.length - 1]);
-            }
-
-            String[] upPath = getUpPath(path);
-            logPath = buildPath(upPath);
-            log = new File(logPath);
-            if (log.list().length == 0) {
-                deleteDirectory(upPath);
-            }
-        }
-    }
-
     private boolean deleteDirectory(File dir) {
         if (dir.isDirectory()) {
             String[] children = dir.list();
@@ -287,10 +365,22 @@ public class FileStorage implements Storage {
     private String constructFileName(String timestamp) {
         try {
             DateTime dateTime = new DateTime(timestamp);
-            return new StringBuffer().append(dateTime.getYear()).append("-").append(dateTime.dayOfMonth().getAsShortText()).append("-").append(dateTime.monthOfYear().getAsShortText()).append(".log").toString();
+            return new StringBuffer(DAY_FORMATTER.print(dateTime)).append(".log").toString();
+            //return new StringBuffer().append(dateTime.getYear()).append("-").append(dateTime.dayOfMonth().getAsText()).append("-").append(dateTime.monthOfYear().getAsShortText(new Locale("en"))).append(".log").toString();
         } catch (Exception ex) {
             logger.error("Couldn't parse date format: " + timestamp, ex);
             return "default.log";
+        }
+    }
+
+    private String createMessage(String message, String timestamp) {
+        try {
+            DateTime dateTime = new DateTime(timestamp);
+            return new StringBuffer(TIME_FORMATTER.print(dateTime)).append(message).toString();
+            //return new StringBuffer().append(dateTime.getHourOfDay()).append(":").append(dateTime.getMinuteOfHour()).append(":").append(dateTime.getSecondOfMinute()).append(" ").append(message).toString();
+        } catch (Exception ex) {
+            logger.error("Couldn't parse date format: " + timestamp, ex);
+            return "**:**:** " + message;
         }
     }
 
@@ -300,10 +390,81 @@ public class FileStorage implements Storage {
         }
         List<String> pathList = new ArrayList<String>();
         for (String pathSegment : path) {
-            if (pathSegment != null && pathSegment.replace(" ", "").length() > 0) {
+            if (!isNullOrEmptyString(pathSegment)) {
                 pathList.add(pathSegment);
             }
         }
         return pathList.toArray(new String[pathList.size()]);
+    }
+
+    private boolean isNullOrEmptyString(String str) {
+        return str == null || str.replace(" ", "").length() == 0;
+    }
+
+    private void checkForAlerts(String message, String path, String timestamp) {
+        for (String filter : subscribers.keySet()) {
+            if (Pattern.matches(filter, message)) {
+                String messageWithTime = createMessage(message, timestamp);
+                //sendNotification(filter, messageWithTime, path);
+                addAlert(filter, messageWithTime);
+            }
+        }
+    }
+
+    private void sendNotification(String filter, String message, String path) {
+        Email email = new SimpleEmail();
+        email.setHostName("smtp.gmail.com");
+        email.setSmtpPort(587);
+        email.setAuthentication(ALERTING_EMAIL, ALERTING_PSWD);
+        email.setTLS(true);
+        try {
+            email.setFrom(ALERTING_EMAIL, "GDLogTool Alerting System");
+        } catch (EmailException ex) {
+            StringBuffer sb = new StringBuffer();
+            sb.append("Cannot resolve email address (");
+            sb.append(ALERTING_EMAIL);
+            sb.append(") from which need to send alerts.");
+            logger.error(sb.toString(), ex);
+            return;
+        }
+        email.setSubject("GDLogTool alert");
+        try {
+            StringBuffer sb = new StringBuffer();
+            sb.append("Alert!\n");
+            sb.append("Application specification: ").append(path).append("\n");
+            sb.append("Filter: ").append(filter).append("\n");
+            sb.append("Message: ").append(message).append("\n");
+            email.setMsg(sb.toString());
+        } catch (EmailException ex) {
+            logger.error(ex.getMessage(), ex);
+            return;
+        }
+        for (String subscriber : subscribers.get(filter)) {
+            try {
+                email.addTo(subscriber);
+            } catch (EmailException ex) {
+                StringBuffer sb = new StringBuffer();
+                sb.append("Cannot resolve email address (");
+                sb.append(subscriber);
+                sb.append(") to which need to send alerts.");
+                logger.error(sb.toString(), ex);
+            }
+        }
+        try {
+            email.send();
+        } catch (EmailException ex) {
+            logger.error("Email sending failed.", ex);
+        }
+    }
+
+    private void addFilter(String filter) {
+        subscribers.put(filter, new HashSet<String>());
+    }
+
+    private void addAlert(String filter, String message) {
+        if (!alerts.containsKey(filter)) {
+            alerts.put(filter, new HashSet<String>());
+        }
+        alerts.get(filter).add(message);
     }
 }

@@ -16,6 +16,7 @@
         <logbackVersion>0.9.29</logbackVersion>
         <slf4jVersion>1.6.1</slf4jVersion>
         <junitVersion>4.8.2</junitVersion>
+        <commonsEmailVersion>1.2</commonsEmailVersion>
     </properties>
 
     <dependencyManagement>
@@ -73,6 +74,12 @@
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junitVersion}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-email</artifactId>
+                <version>${commonsEmailVersion}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
