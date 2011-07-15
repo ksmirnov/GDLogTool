@@ -37,25 +37,6 @@ public class FileStorageTest {
         fileStorage.setLogFolder(logFolder);
     }
 
-    /*@Test
-    public void remoteTest() {
-        BeanFactory factory = new ClassPathXmlApplicationContext("clientFileStorageConfiguration.xml");
-        ClientFileStorage cfs = (ClientFileStorage) factory.getBean("clientFileStorage");
-        cfs.getFileStorage().addMessage(path1, logDate1, logMsg);
-        cfs.getFileStorage().addMessage(path1, logDate1, logMsg);
-
-        List<String> expectedList = new ArrayList<String>();
-        expectedList.add("21:12:53 " + logMsg);
-        expectedList.add("21:12:53 " + logMsg);
-
-        assertEquals(expectedList, cfs.getFileStorage().getLog(path1, logName1));
-
-        Tree tree = cfs.getFileStorage().getTree(-1);
-        assertTrue(tree.getChildren().containsKey(path1[0]));
-
-        cfs.getFileStorage().deleteLog(path1, logName1);
-    }*/
-
     @Test
     public void simpleAddAndDeleteTest() {
         fileStorage.addMessage(path4, logDate2, logMsg);
@@ -131,18 +112,6 @@ public class FileStorageTest {
         assertEquals(expectedSet3, subTree.getChildren().get(path2[3]).getChildren().keySet());
         assertEquals(null, subTree.getChildren().get(path1[5]).getChildren().get(path1[4]));
 
-//        allTree.getChildren().clear();
-//        fileStorage.createTreeFromDisk();
-//        allTree = fileStorage.getTree(-1);
-//        subTree = fileStorage.getTree(1, Arrays.copyOfRange(path1, 0, 3));
-//        assertEquals(2, allTree.getChildren().keySet().size());
-//        assertEquals(2, allTree.getChildren().get(path1[0]).getChildren().get(path1[1]).getChildren().keySet().size());
-//        assertEquals(null, allTree.getChildren().get(path4[0]).getChildren().get(path4[1]));
-//        assertEquals(expectedSet1, subTree.getChildren().keySet());
-//        assertEquals(expectedSet2, subTree.getChildren().get(path1[5]).getChildren().keySet());
-//        assertEquals(expectedSet3, subTree.getChildren().get(path2[3]).getChildren().keySet());
-//        assertEquals(null, subTree.getChildren().get(path1[5]).getChildren().get(path1[7]));
-
         fileStorage.deleteDirectory(path1);
         fileStorage.deleteDirectory(path2);
         fileStorage.deleteDirectory(path3);
@@ -194,6 +163,8 @@ public class FileStorageTest {
         fileStorage.deleteLog(path1, logName1);
     }
 
+
+    //It's commented for not spaming emails every time...
     /*@Test
     public void emailNotificationTest() {
         String filter = "a*b";
@@ -204,7 +175,7 @@ public class FileStorageTest {
         fileStorage.subscribe(filter, "gdlogtool@gmail.com");
         fileStorage.unsubscribe(filter, "gdlogtool@gmail.com");
         fileStorage.addMessage(path1, logDate1, "aaaab");
-        fileStorage.deleteLog(path1);
+        fileStorage.deleteDirectory(path1);
     }*/
 
     @Test

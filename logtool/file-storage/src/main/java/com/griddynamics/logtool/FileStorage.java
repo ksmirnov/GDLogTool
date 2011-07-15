@@ -12,14 +12,14 @@ import org.springframework.beans.factory.annotation.Required;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
 public class FileStorage implements Storage {
     private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
-    private static final String ALERTING_EMAIL = "gdlogtool@gmail.com";
-    private static final String ALERTING_PSWD = "lLiWKuXEVl";
     private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormat.forPattern("yyyy-dd-MMM");
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("HH:mm:ss ");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("HH:mm:ss");
 
     private boolean isFirstStart = true;
     private String logFolder = "";
@@ -29,6 +29,21 @@ public class FileStorage implements Storage {
     private long lastUpdateTime = System.currentTimeMillis();
     private Map<String, HashSet<String>> subscribers = new HashMap<String, HashSet<String>>();
     private Map<String, HashSet<String>> alerts = new HashMap<String, HashSet<String>>();
+    private String alertingEmail = "gdlogtool@gmail.com";
+    private String alertingPassword = "lLiWKuXEVl";
+
+    private Lock subscribersLock = new ReentrantLock(true);
+    private Lock alertsLock = new ReentrantLock(true);
+
+    @Required
+    public void setAlertingEmail(String alertingEmail) {
+        this.alertingEmail = alertingEmail;
+    }
+
+    @Required
+    public void setAlertingPassword(String alertingPassword) {
+        this.alertingPassword = alertingPassword;
+    }
 
     @Required
     public void setLogFolder(String logFolder) {
@@ -46,49 +61,63 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public synchronized void subscribe(String filter, String emailAddress) {
+    public void subscribe(String filter, String emailAddress) {
         if (!isNullOrEmptyString(filter) && !isNullOrEmptyString(emailAddress)) {
+            subscribersLock.lock();
             if (!subscribers.containsKey(filter)) {
                 addFilter(filter);
             }
             subscribers.get(filter).add(emailAddress);
+            subscribersLock.unlock();
         }
     }
 
     @Override
-    public synchronized void unsubscribe(String filter, String emailAddress) {
+    public void unsubscribe(String filter, String emailAddress) {
         if (!isNullOrEmptyString(filter) && !isNullOrEmptyString(emailAddress)) {
+            subscribersLock.lock();
             subscribers.get(filter).remove(emailAddress);
             if (subscribers.get(filter).size() == 0) {
                 subscribers.remove(filter);
             }
+            subscribersLock.unlock();
         }
     }
 
     @Override
-    public synchronized Map<String, HashSet<String>> getSubscribers() {
-        return subscribers;
+    public Map<String, HashSet<String>> getSubscribers() {
+        subscribersLock.lock();
+        Map<String, HashSet<String>> result = getCopy(subscribers);
+        subscribersLock.unlock();
+        return result;
     }
 
     @Override
-    public synchronized void removeFilter(String filter) {
+    public void removeFilter(String filter) {
         if (!isNullOrEmptyString(filter)) {
+            alertsLock.lock();
             subscribers.remove(filter);
             if (alerts.containsKey(filter)) {
                 alerts.remove(filter);
             }
+            alertsLock.unlock();
         }
     }
 
     @Override
-    public synchronized Map<String, HashSet<String>> getAlerts() {
-        return alerts;
+    public Map<String, HashSet<String>> getAlerts() {
+        alertsLock.lock();
+        Map<String, HashSet<String>> result = getCopy(alerts);
+        alertsLock.unlock();
+        return result;
     }
 
     @Override
-    public synchronized void removeAlert(String filter, String message) {
+    public void removeAlert(String filter, String message) {
         if (!isNullOrEmptyString(filter) && !isNullOrEmptyString(message)) {
+            alertsLock.lock();
             alerts.get(filter).remove(message);
+            alertsLock.unlock();
         }
     }
 
@@ -217,7 +246,7 @@ public class FileStorage implements Storage {
         }
 
         if (height == -1) {
-            return fileSystem;
+            return getTree(-1, fileSystem);
         } else if (height == 0) {
             String[] clearPath = removeNullAndEmptyPathSegments(path);
             Tree node = new Tree();
@@ -246,7 +275,7 @@ public class FileStorage implements Storage {
         if (curNode == null) return null;
         Tree node = new Tree(curNode);
         for (String key : curNode.getChildren().keySet()) {
-            if (height > 0) {
+            if (height > 0 || height < 0) {
                 node.getChildren().put(key, getTree(height - 1, curNode.getChildren().get(key)));
             } else {
                 node.getChildren().put(key, null);
@@ -365,8 +394,7 @@ public class FileStorage implements Storage {
     private String constructFileName(String timestamp) {
         try {
             DateTime dateTime = new DateTime(timestamp);
-            return new StringBuffer(DAY_FORMATTER.print(dateTime)).append(".log").toString();
-            //return new StringBuffer().append(dateTime.getYear()).append("-").append(dateTime.dayOfMonth().getAsText()).append("-").append(dateTime.monthOfYear().getAsShortText(new Locale("en"))).append(".log").toString();
+            return new StringBuffer(DAY_FORMATTER.withLocale(new Locale("en")).print(dateTime)).append(".log").toString();
         } catch (Exception ex) {
             logger.error("Couldn't parse date format: " + timestamp, ex);
             return "default.log";
@@ -376,8 +404,7 @@ public class FileStorage implements Storage {
     private String createMessage(String message, String timestamp) {
         try {
             DateTime dateTime = new DateTime(timestamp);
-            return new StringBuffer(TIME_FORMATTER.print(dateTime)).append(message).toString();
-            //return new StringBuffer().append(dateTime.getHourOfDay()).append(":").append(dateTime.getMinuteOfHour()).append(":").append(dateTime.getSecondOfMinute()).append(" ").append(message).toString();
+            return new StringBuffer(TIME_FORMATTER.print(dateTime)).append(" ").append(message).toString();
         } catch (Exception ex) {
             logger.error("Couldn't parse date format: " + timestamp, ex);
             return "**:**:** " + message;
@@ -398,11 +425,14 @@ public class FileStorage implements Storage {
     }
 
     private boolean isNullOrEmptyString(String str) {
-        return str == null || str.replace(" ", "").length() == 0;
+        return str == null || str.trim().length() == 0;
     }
 
     private void checkForAlerts(String message, String path, String timestamp) {
-        for (String filter : subscribers.keySet()) {
+        subscribersLock.lock();
+        Set<String> filters = subscribers.keySet();
+        subscribersLock.unlock();
+        for (String filter : filters) {
             if (Pattern.matches(filter, message)) {
                 String messageWithTime = createMessage(message, timestamp);
                 //sendNotification(filter, messageWithTime, path);
@@ -415,14 +445,14 @@ public class FileStorage implements Storage {
         Email email = new SimpleEmail();
         email.setHostName("smtp.gmail.com");
         email.setSmtpPort(587);
-        email.setAuthentication(ALERTING_EMAIL, ALERTING_PSWD);
+        email.setAuthentication(alertingEmail, alertingPassword);
         email.setTLS(true);
         try {
-            email.setFrom(ALERTING_EMAIL, "GDLogTool Alerting System");
+            email.setFrom(alertingEmail, "GDLogTool Alerting System");
         } catch (EmailException ex) {
             StringBuffer sb = new StringBuffer();
             sb.append("Cannot resolve email address (");
-            sb.append(ALERTING_EMAIL);
+            sb.append(alertingEmail);
             sb.append(") from which need to send alerts.");
             logger.error(sb.toString(), ex);
             return;
@@ -462,9 +492,20 @@ public class FileStorage implements Storage {
     }
 
     private void addAlert(String filter, String message) {
+        alertsLock.lock();
         if (!alerts.containsKey(filter)) {
             alerts.put(filter, new HashSet<String>());
         }
         alerts.get(filter).add(message);
+        alertsLock.unlock();
+    }
+
+    private Map<String, HashSet<String>> getCopy(Map<String, HashSet<String>> obj) {
+        Map<String, HashSet<String>> copy = new HashMap<String, HashSet<String>>();
+        for (String key : obj.keySet()) {
+            copy.put(key, new HashSet<String>());
+            copy.get(key).addAll(obj.get(key));
+        }
+        return copy;
     }
 }

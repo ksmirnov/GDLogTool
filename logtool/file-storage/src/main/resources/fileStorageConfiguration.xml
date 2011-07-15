@@ -11,11 +11,4 @@
         <property name="logFolder" value="${logFolder}"/>
         <property name="maxFolderSize" value="${maxFolderSize}"/>
     </bean>
-
-    <!--<bean class="org.springframework.remoting.rmi.RmiServiceExporter">-->
-        <!--<property name="serviceName" value="FileStorage"/>-->
-        <!--<property name="service" ref="fileStorage"/>-->
-        <!--<property name="serviceInterface" value="com.griddynamics.logtool.Storage"/>-->
-        <!--<property name="registryPort" value="1199"/>-->
-    <!--</bean>-->
 </beans>
