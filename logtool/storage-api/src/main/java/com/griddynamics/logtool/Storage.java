@@ -88,7 +88,8 @@ public interface Storage {
 
     /**
      * This method returns all alerts occurred after starting service
-     * @return - all occurred alerts represented as map with filters as keys and all messages as HashSet value.
+     * @return - all occurred alerts represented as map with filters as keys
+     * and all messages as HashSet value.
      */
     Map<String, HashSet<String>> getAlerts();
 
@@ -98,4 +99,17 @@ public interface Storage {
      * @param message - message which satisfied filter
      */
     void removeAlert(String filter, String message);
+
+    /**
+     * This method searches for request string in all log files which lie
+     * in a specified folder and its subfolders.
+     * @param path - Array of path segments
+     * @param request - String to search
+     * @return - All occurrences of request represented as HashMap
+     * with absolute log file name as key and HashMap with number
+     * of chunk of file in which request was found as key
+     * and request positions in that chunk represented as ArrayList as value
+     * as value.
+     */
+    Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request);
 }

@@ -142,6 +142,14 @@ public class FileStorage implements Storage {
     }
 
     @Override
+    public Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request) {
+        String[] clearPath = removeNullAndEmptyPathSegments(path);
+        String logPath = buildPath(clearPath);
+        Searcher searcher = new Searcher(logPath, request);
+        return searcher.doSearch();
+    }
+
+    @Override
     public synchronized void addMessage(String[] path, String timestamp, String message) {
         if (needToWipe()) {
             wipe();
