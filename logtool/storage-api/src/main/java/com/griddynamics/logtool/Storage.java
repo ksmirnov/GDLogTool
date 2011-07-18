@@ -109,7 +109,10 @@ public interface Storage {
      * with absolute log file name as key and HashMap with number
      * of chunk of file in which request was found as key
      * and request positions in that chunk represented as ArrayList as value
-     * as value.
+     * as value. (Or as HashMap with absolute log file name as key and HashMap with number
+     * of line of file in which request was found as key
+     * and request positions in that line represented as ArrayList as value
+     * as value.)
      */
     Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request);
 }

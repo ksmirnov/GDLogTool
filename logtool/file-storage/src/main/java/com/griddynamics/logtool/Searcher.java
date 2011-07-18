@@ -3,10 +3,7 @@ package com.griddynamics.logtool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,14 +25,14 @@ public class Searcher {
     }
 
     public Map<String, Map<Integer, List<Integer>>> doSearch() {
-        return doSearch(folderPath);
+        return search(folderPath);
     }
 
     private Map<String, Map<Integer, List<Integer>>> doSearch(String path) {
         File dir = new File(path);
         File[] logs = dir.listFiles();
 
-        for (final File log : logs) {
+        for (File log : logs) {
             if (log.isFile()) {
                 RandomAccessFile rafLog = null;
                 try {
@@ -80,6 +77,51 @@ public class Searcher {
                 }
             } else {
                 doSearch(log.getAbsolutePath());
+            }
+        }
+
+        return results;
+    }
+
+    private Map<String, Map<Integer, List<Integer>>> search(String path) {
+        File dir = new File(path);
+        File[] logs = dir.listFiles();
+
+        for (File log : logs) {
+            if (log.isFile()) {
+                BufferedReader brLog = null;
+                try {
+                    brLog = new BufferedReader(new FileReader(log));
+                    int lineNumber = 1;
+                    String line = brLog.readLine();
+                    while (line != null) {
+                        int pos = -1;
+                        while (pos < line.length()) {
+                            int index = line.indexOf(request, pos + 1);
+                            if (index >= 0) {
+                                if (!results.containsKey(log.getAbsolutePath())) {
+                                    results.put(log.getAbsolutePath(), new HashMap<Integer, List<Integer>>());
+                                }
+                                if (!results.get(log.getAbsolutePath()).containsKey(lineNumber)) {
+                                    results.get(log.getAbsolutePath()).put(lineNumber, new ArrayList<Integer>());
+                                }
+                                results.get(log.getAbsolutePath()).get(lineNumber).add(index);
+                                pos = index + 1;
+                            } else {
+                                pos = line.length();
+                            }
+                        }
+                        lineNumber++;
+                        line = brLog.readLine();
+                    }
+                    brLog.close();
+                } catch (FileNotFoundException ex) {
+                    logger.error("Tried to read log file: " + log.getAbsolutePath(), ex);
+                } catch (IOException ex) {
+                    logger.error(ex.getMessage(), ex);
+                }
+            } else {
+                search(log.getAbsolutePath());
             }
         }
 
