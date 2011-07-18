@@ -13,7 +13,7 @@ import static org.junit.Assert.*;
  * Unit test for simple filestorage.
  */
 public class FileStorageTest {
-    private static final String[] path1 = {"app", "host", "inst1", "", null, "day", null, "hour"};
+    private static final String[] path1 = {"app", "host", "inst1", "   ", null, "day", "", "hour"};
     private static final String[] path2 = {"app", "host", "inst2", "day", "hour"};
     private static final String[] path3 = {"app", "host1", "inst", "day", "hour"};
     private static final String[] path4 = {"app1", "host"};
@@ -162,7 +162,6 @@ public class FileStorageTest {
 
         fileStorage.deleteLog(path1, logName1);
     }
-
 
     //It's commented for not spaming emails every time...
     /*@Test

@@ -30,6 +30,7 @@
         <log4jVersion>1.2.16</log4jVersion>
         <mockitoVersion>1.8.5</mockitoVersion>
         <commonsEmailVersion>1.2</commonsEmailVersion>
+        <commonsLangVersion>2.6</commonsLangVersion>
     </properties>
 
     <dependencyManagement>
@@ -110,6 +111,12 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-email</artifactId>
                 <version>${commonsEmailVersion}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commonsLangVersion}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

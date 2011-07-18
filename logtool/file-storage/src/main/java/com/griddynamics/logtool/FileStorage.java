@@ -1,5 +1,6 @@
 package com.griddynamics.logtool;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
@@ -21,12 +22,11 @@ public class FileStorage implements Storage {
     private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormat.forPattern("yyyy-dd-MMM");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("HH:mm:ss");
 
-    private boolean isFirstStart = true;
     private String logFolder = "";
     private long maxFolderSize;
     private long curFolderSize = 0;
     private Tree fileSystem = new Tree();
-    private long lastUpdateTime = System.currentTimeMillis();
+    private volatile long lastUpdateTime = System.currentTimeMillis();
     private Map<String, HashSet<String>> subscribers = new HashMap<String, HashSet<String>>();
     private Map<String, HashSet<String>> alerts = new HashMap<String, HashSet<String>>();
     private String alertingEmail = "gdlogtool@gmail.com";
@@ -62,72 +62,87 @@ public class FileStorage implements Storage {
 
     @Override
     public void subscribe(String filter, String emailAddress) {
-        if (!isNullOrEmptyString(filter) && !isNullOrEmptyString(emailAddress)) {
-            subscribersLock.lock();
-            if (!subscribers.containsKey(filter)) {
-                addFilter(filter);
+        if (StringUtils.isNotBlank(filter) && StringUtils.isNotBlank(emailAddress)) {
+            try {
+                subscribersLock.lock();
+                if (!subscribers.containsKey(filter)) {
+                    addFilter(filter);
+                }
+                subscribers.get(filter).add(emailAddress);
+            } finally {
+                subscribersLock.unlock();
             }
-            subscribers.get(filter).add(emailAddress);
-            subscribersLock.unlock();
         }
     }
 
     @Override
     public void unsubscribe(String filter, String emailAddress) {
-        if (!isNullOrEmptyString(filter) && !isNullOrEmptyString(emailAddress)) {
-            subscribersLock.lock();
-            subscribers.get(filter).remove(emailAddress);
-            if (subscribers.get(filter).size() == 0) {
-                subscribers.remove(filter);
+        if (StringUtils.isNotBlank(filter) && StringUtils.isNotBlank(emailAddress)) {
+            try {
+                subscribersLock.lock();
+                subscribers.get(filter).remove(emailAddress);
+                if (subscribers.get(filter).size() == 0) {
+                    subscribers.remove(filter);
+                }
+            } finally {
+                subscribersLock.unlock();
             }
-            subscribersLock.unlock();
         }
     }
 
     @Override
     public Map<String, HashSet<String>> getSubscribers() {
-        subscribersLock.lock();
-        Map<String, HashSet<String>> result = getCopy(subscribers);
-        subscribersLock.unlock();
-        return result;
+        Map<String, HashSet<String>> result = new HashMap<String, HashSet<String>>();
+        try {
+            subscribersLock.lock();
+            result = getCopy(subscribers);
+        } finally {
+            subscribersLock.unlock();
+            return result;
+        }
     }
 
     @Override
     public void removeFilter(String filter) {
-        if (!isNullOrEmptyString(filter)) {
-            alertsLock.lock();
-            subscribers.remove(filter);
-            if (alerts.containsKey(filter)) {
-                alerts.remove(filter);
+        if (StringUtils.isNotBlank(filter)) {
+            try {
+                alertsLock.lock();
+                subscribers.remove(filter);
+                if (alerts.containsKey(filter)) {
+                    alerts.remove(filter);
+                }
+            } finally {
+                alertsLock.unlock();
             }
-            alertsLock.unlock();
         }
     }
 
     @Override
     public Map<String, HashSet<String>> getAlerts() {
-        alertsLock.lock();
-        Map<String, HashSet<String>> result = getCopy(alerts);
-        alertsLock.unlock();
-        return result;
+        Map<String, HashSet<String>> result = new HashMap<String, HashSet<String>>();
+        try {
+            alertsLock.lock();
+            result = getCopy(alerts);
+        } finally {
+            alertsLock.unlock();
+            return result;
+        }
     }
 
     @Override
     public void removeAlert(String filter, String message) {
-        if (!isNullOrEmptyString(filter) && !isNullOrEmptyString(message)) {
-            alertsLock.lock();
-            alerts.get(filter).remove(message);
-            alertsLock.unlock();
+        if (StringUtils.isNotBlank(filter) && StringUtils.isNotBlank(message)) {
+            try {
+                alertsLock.lock();
+                alerts.get(filter).remove(message);
+            } finally {
+                alertsLock.unlock();
+            }
         }
     }
 
     @Override
     public synchronized void addMessage(String[] path, String timestamp, String message) {
-        if (isFirstStart) {
-            createTreeFromDisk();
-            isFirstStart = false;
-        }
-
         if (needToWipe()) {
             wipe();
         }
@@ -136,7 +151,9 @@ public class FileStorage implements Storage {
 
         String logPath = buildPath(clearPath);
         File dir = new File(logPath);
-        dir.mkdirs();
+        if (dir.mkdirs()) {
+            lastUpdateTime = System.currentTimeMillis();
+        }
         String fileName = addToPath(logPath, constructFileName(timestamp));
         FileWriter fileWriter = null;
         File log = new File(fileName);
@@ -162,7 +179,6 @@ public class FileStorage implements Storage {
         addToFileSystem(fileSystem, clearPath);
 
         curFolderSize += (log.length() - size);
-        lastUpdateTime = System.currentTimeMillis();
 
         checkForAlerts(message, fileName, timestamp);
     }
@@ -188,7 +204,7 @@ public class FileStorage implements Storage {
 
     @Override
     public synchronized void deleteLog(String[] path, String name) {
-        if (isNullOrEmptyString(name)) {
+        if (StringUtils.isBlank(name)) {
             return;
         }
         String[] clearPath = removeNullAndEmptyPathSegments(path);
@@ -240,11 +256,6 @@ public class FileStorage implements Storage {
 
     @Override
     public synchronized Tree getTree(int height, String ... path) {
-        if (isFirstStart) {
-            createTreeFromDisk();
-            isFirstStart = false;
-        }
-
         if (height == -1) {
             return getTree(-1, fileSystem);
         } else if (height == 0) {
@@ -314,7 +325,10 @@ public class FileStorage implements Storage {
         }
         boolean hasOnlyFiles = true;
         for (int i = 0; i < dirs.length; i++) {
-            if (dirs[i].isDirectory()) hasOnlyFiles = false;
+            if (dirs[i].isDirectory()) {
+                hasOnlyFiles = false;
+                break;
+            }
         }
         if (hasOnlyFiles) {
             return null;
@@ -394,7 +408,7 @@ public class FileStorage implements Storage {
     private String constructFileName(String timestamp) {
         try {
             DateTime dateTime = new DateTime(timestamp);
-            return new StringBuffer(DAY_FORMATTER.withLocale(new Locale("en")).print(dateTime)).append(".log").toString();
+            return new StringBuffer(DAY_FORMATTER.withLocale(Locale.ENGLISH).print(dateTime)).append(".log").toString();
         } catch (Exception ex) {
             logger.error("Couldn't parse date format: " + timestamp, ex);
             return "default.log";
@@ -417,21 +431,21 @@ public class FileStorage implements Storage {
         }
         List<String> pathList = new ArrayList<String>();
         for (String pathSegment : path) {
-            if (!isNullOrEmptyString(pathSegment)) {
+            if (StringUtils.isNotBlank(pathSegment)) {
                 pathList.add(pathSegment);
             }
         }
         return pathList.toArray(new String[pathList.size()]);
     }
 
-    private boolean isNullOrEmptyString(String str) {
-        return str == null || str.trim().length() == 0;
-    }
-
     private void checkForAlerts(String message, String path, String timestamp) {
-        subscribersLock.lock();
-        Set<String> filters = subscribers.keySet();
-        subscribersLock.unlock();
+        Set<String> filters = new HashSet<String>();
+        try {
+            subscribersLock.lock();
+            filters = subscribers.keySet();
+        } finally {
+            subscribersLock.unlock();
+        }
         for (String filter : filters) {
             if (Pattern.matches(filter, message)) {
                 String messageWithTime = createMessage(message, timestamp);
@@ -492,12 +506,15 @@ public class FileStorage implements Storage {
     }
 
     private void addAlert(String filter, String message) {
-        alertsLock.lock();
-        if (!alerts.containsKey(filter)) {
-            alerts.put(filter, new HashSet<String>());
+        try {
+            alertsLock.lock();
+            if (!alerts.containsKey(filter)) {
+                alerts.put(filter, new HashSet<String>());
+            }
+            alerts.get(filter).add(message);
+        } finally {
+            alertsLock.unlock();
         }
-        alerts.get(filter).add(message);
-        alertsLock.unlock();
     }
 
     private Map<String, HashSet<String>> getCopy(Map<String, HashSet<String>> obj) {
