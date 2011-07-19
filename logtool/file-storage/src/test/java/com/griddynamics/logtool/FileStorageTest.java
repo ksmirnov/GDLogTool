@@ -4,8 +4,7 @@ import org.junit.*;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -60,6 +59,25 @@ public class FileStorageTest {
         assertEquals(expectedList, fileStorage.getLog(path1, logName1));
 
         fileStorage.deleteLog(path1, logName1);
+    }
+
+    @Test
+    public void newGetTest() throws IOException {
+        fileStorage.addMessage(path1, logDate1, logMsg);
+        fileStorage.addMessage(path1, logDate1, logMsg);
+
+        FileOutputStream fos = new FileOutputStream("test");
+        fileStorage.getLogNew(path1, logName1, 0, fos);
+        fos.flush();
+        fos.close();
+        String expectedLine = "03:09:53 " + logMsg;
+        BufferedReader reader = new BufferedReader(new FileReader("test"));
+        assertEquals(expectedLine, reader.readLine());
+        assertEquals(expectedLine, reader.readLine());
+        reader.close();
+        File f = new File("test");
+        f.delete();
+        fileStorage.deleteDirectory(path1);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.griddynamics.logtool;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -126,7 +127,26 @@ public interface Storage {
      * of line of file in which request was found as key
      * and request positions in that line represented as ArrayList as value
      * as value.)
-     * @throws IOException -  Throws IOException if has some problems with I/O in the search.
+     * @throws IOException - Throws IOException if has some problems with I/O in the search.
      */
     Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request) throws IOException;
+
+    /**
+     * This method return current length of specified log file.
+     * @param path - Array of path segments
+     * @param name - Log file name
+     * @return - Log file length in bytes
+     * @throws IOException - Throws IOException if has some problems with input
+     */
+    long getLogLength(String[] path, String name) throws IOException;
+
+    /**
+     * This method reads specified portion of specified file into stream.
+     * @param path - Array of path segments
+     * @param name - Log file name
+     * @param chunkNumber - Number of needed part of file from the begining
+     * @param outputStream - Stream where to write read file
+     * @throws IOException - Throws IOException if has some problems with input
+     */
+    void getLogNew(String[] path, String name, int chunkNumber, OutputStream outputStream) throws IOException;
 }

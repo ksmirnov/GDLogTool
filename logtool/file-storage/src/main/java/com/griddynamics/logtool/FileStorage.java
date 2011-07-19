@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,11 +37,18 @@ public class FileStorage implements Storage {
     private String alertingEmail;
     private String alertingPassword;
     private int pageSize;
+    private int bufferSize;
     private List<DateTime> dates = new ArrayList<DateTime>();
+    private Map<String, FileChannel> openFiles = new HashMap<String, FileChannel>();
 
     private Lock subscribersLock = new ReentrantLock(true);
     private Lock alertsLock = new ReentrantLock(true);
     private Lock quotaAlertsLock = new ReentrantLock(true);
+
+    @Required
+    public void setBufferSize(int bufferSize) {
+        this.bufferSize = bufferSize << 9;
+    }
 
     @Required
     public void setPageSize(int pageSize) {
@@ -244,6 +253,60 @@ public class FileStorage implements Storage {
         } catch (IOException ex) {
             logger.error("Tried to read log file: " + logPath, ex);
             return new ArrayList<String>();
+        }
+    }
+
+    @Override
+    public synchronized long getLogLength(String[] path, String name) throws IOException {
+        String[] clearPath = removeNullAndEmptyPathSegments(path);
+        String fileName = addToPath(buildPath(clearPath), name);
+        if (!openFiles.containsKey(fileName)) {
+            RandomAccessFile log = new RandomAccessFile(fileName, "r");
+            openFiles.put(fileName, log.getChannel());
+        }
+        return openFiles.get(fileName).size();
+    }
+
+    @Override
+    public synchronized void getLogNew(String[] path, String name, int chunkNumber, OutputStream outputStream) throws IOException {
+        String[] clearPath = removeNullAndEmptyPathSegments(path);
+        String fileName = addToPath(buildPath(clearPath), name);
+        if (!openFiles.containsKey(fileName)) {
+            RandomAccessFile log = new RandomAccessFile(fileName, "r");
+            openFiles.put(fileName, log.getChannel());
+        }
+
+        FileChannel fc = openFiles.get(fileName);
+        ByteBuffer buf = ByteBuffer.allocate(bufferSize);
+
+        long startPos = chunkNumber * pageSize;
+        long fileLen = fc.size();
+        int i = 0;
+
+        while (i < pageSize / bufferSize && startPos + (i + 1) * bufferSize < fileLen) {
+            fc.read(buf, startPos + i * bufferSize);
+            outputStream.write(buf.array());
+            i++;
+        }
+
+        if (i == pageSize / bufferSize) {
+            int bytesRemaining = pageSize % bufferSize;
+            long curPos = startPos + i * bufferSize;
+            if (bytesRemaining != 0 && curPos < fileLen) {
+                int bytesNeedToRead = bytesRemaining > (fileLen - curPos) ? (int)(fileLen - curPos) : bytesRemaining;
+                ByteBuffer buffer = ByteBuffer.allocate(bytesNeedToRead);
+                fc.read(buf, curPos);
+                outputStream.write(buffer.array());
+            }
+        } else {
+            long curPos = startPos + i * bufferSize;
+            int bytesRemaining = (int) (fileLen - curPos);
+
+            if (bytesRemaining != 0 && curPos < fileLen) {
+                ByteBuffer buffer = ByteBuffer.allocate(bytesRemaining);
+                fc.read(buffer, fileLen - bytesRemaining);
+                outputStream.write(buffer.array());
+            }
         }
     }
 
