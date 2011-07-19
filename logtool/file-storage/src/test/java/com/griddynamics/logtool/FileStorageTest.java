@@ -5,6 +5,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -204,7 +205,7 @@ public class FileStorageTest {
     }
 
     @Test
-    public void searchTest() {
+    public void searchTest() throws IOException {
         fileStorage.addMessage(path1, logDate1, "String for testest search");
         fileStorage.addMessage(path2, logDate2, "String for testest search");
 

@@ -1,6 +1,7 @@
 package com.griddynamics.logtool;
 
-import org.apache.commons.lang.StringUtils;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
@@ -29,11 +30,17 @@ public class FileStorage implements Storage {
     private volatile long lastUpdateTime = System.currentTimeMillis();
     private Map<String, HashSet<String>> subscribers = new HashMap<String, HashSet<String>>();
     private Map<String, HashSet<String>> alerts = new HashMap<String, HashSet<String>>();
-    private String alertingEmail = "gdlogtool@gmail.com";
-    private String alertingPassword = "lLiWKuXEVl";
+    private String alertingEmail;
+    private String alertingPassword;
+    private int pageSize;
 
     private Lock subscribersLock = new ReentrantLock(true);
     private Lock alertsLock = new ReentrantLock(true);
+
+    @Required
+    public void setPageSize(int pageSize) {
+        this.pageSize = pageSize << 10;
+    }
 
     @Required
     public void setAlertingEmail(String alertingEmail) {
@@ -62,7 +69,7 @@ public class FileStorage implements Storage {
 
     @Override
     public void subscribe(String filter, String emailAddress) {
-        if (StringUtils.isNotBlank(filter) && StringUtils.isNotBlank(emailAddress)) {
+        if (isNotBlank(filter) && isNotBlank(emailAddress)) {
             try {
                 subscribersLock.lock();
                 if (!subscribers.containsKey(filter)) {
@@ -77,7 +84,7 @@ public class FileStorage implements Storage {
 
     @Override
     public void unsubscribe(String filter, String emailAddress) {
-        if (StringUtils.isNotBlank(filter) && StringUtils.isNotBlank(emailAddress)) {
+        if (isNotBlank(filter) && isNotBlank(emailAddress)) {
             try {
                 subscribersLock.lock();
                 subscribers.get(filter).remove(emailAddress);
@@ -92,24 +99,46 @@ public class FileStorage implements Storage {
 
     @Override
     public Map<String, HashSet<String>> getSubscribers() {
-        Map<String, HashSet<String>> result = new HashMap<String, HashSet<String>>();
         try {
             subscribersLock.lock();
-            result = getCopy(subscribers);
+            return getCopy(subscribers);
         } finally {
             subscribersLock.unlock();
-            return result;
         }
     }
 
     @Override
     public void removeFilter(String filter) {
-        if (StringUtils.isNotBlank(filter)) {
+        if (isNotBlank(filter)) {
             try {
                 alertsLock.lock();
+                subscribersLock.lock();
                 subscribers.remove(filter);
+                alerts.remove(filter);
+            } finally {
+                alertsLock.unlock();
+                subscribersLock.unlock();
+            }
+        }
+    }
+
+    @Override
+    public Map<String, HashSet<String>> getAlerts() {
+        try {
+            alertsLock.lock();
+            return getCopy(alerts);
+        } finally {
+            alertsLock.unlock();
+        }
+    }
+
+    @Override
+    public void removeAlert(String filter, String message) {
+        if (isNotBlank(filter) && isNotBlank(message)) {
+            try {
+                alertsLock.lock();
                 if (alerts.containsKey(filter)) {
-                    alerts.remove(filter);
+                    alerts.get(filter).remove(message);
                 }
             } finally {
                 alertsLock.unlock();
@@ -118,35 +147,11 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public Map<String, HashSet<String>> getAlerts() {
-        Map<String, HashSet<String>> result = new HashMap<String, HashSet<String>>();
-        try {
-            alertsLock.lock();
-            result = getCopy(alerts);
-        } finally {
-            alertsLock.unlock();
-            return result;
-        }
-    }
-
-    @Override
-    public void removeAlert(String filter, String message) {
-        if (StringUtils.isNotBlank(filter) && StringUtils.isNotBlank(message)) {
-            try {
-                alertsLock.lock();
-                alerts.get(filter).remove(message);
-            } finally {
-                alertsLock.unlock();
-            }
-        }
-    }
-
-    @Override
-    public Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request) {
+    public Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request) throws IOException {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String logPath = buildPath(clearPath);
-        Searcher searcher = new Searcher(logPath, request);
-        return searcher.doSearch();
+        Searcher searcher = new Searcher(request, pageSize);
+        return searcher.doSearch(logPath);
     }
 
     @Override
@@ -212,7 +217,7 @@ public class FileStorage implements Storage {
 
     @Override
     public synchronized void deleteLog(String[] path, String name) {
-        if (StringUtils.isBlank(name)) {
+        if (isBlank(name)) {
             return;
         }
         String[] clearPath = removeNullAndEmptyPathSegments(path);
@@ -439,7 +444,7 @@ public class FileStorage implements Storage {
         }
         List<String> pathList = new ArrayList<String>();
         for (String pathSegment : path) {
-            if (StringUtils.isNotBlank(pathSegment)) {
+            if (isNotBlank(pathSegment)) {
                 pathList.add(pathSegment);
             }
         }
@@ -450,7 +455,7 @@ public class FileStorage implements Storage {
         Set<String> filters = new HashSet<String>();
         try {
             subscribersLock.lock();
-            filters = subscribers.keySet();
+            filters = new HashSet<String>(subscribers.keySet());
         } finally {
             subscribersLock.unlock();
         }
@@ -532,5 +537,18 @@ public class FileStorage implements Storage {
             copy.get(key).addAll(obj.get(key));
         }
         return copy;
+    }
+
+    private boolean hasNullsOrEmptyStrings(String[] collection) {
+        if (collection == null) {
+            return true;
+        } else {
+            for (String str : collection) {
+                if (isBlank(str)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

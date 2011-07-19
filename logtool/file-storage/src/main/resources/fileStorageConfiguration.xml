@@ -10,5 +10,8 @@
     <bean id="fileStorage" class="com.griddynamics.logtool.FileStorage" init-method="createTreeFromDisk">
         <property name="logFolder" value="${logFolder}"/>
         <property name="maxFolderSize" value="${maxFolderSize}"/>
+        <property name="alertingEmail" value="${alertingEmail}"/>
+        <property name="alertingPassword" value="${alertingPassword}"/>
+        <property name="pageSize" value="${pageSize}"/>
     </bean>
 </beans>

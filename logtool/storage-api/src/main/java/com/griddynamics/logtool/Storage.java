@@ -1,5 +1,6 @@
 package com.griddynamics.logtool;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -113,6 +114,7 @@ public interface Storage {
      * of line of file in which request was found as key
      * and request positions in that line represented as ArrayList as value
      * as value.)
+     * @throws IOException -  Throws IOException if has some problems with I/O in the search.
      */
-    Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request);
+    Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request) throws IOException;
 }
