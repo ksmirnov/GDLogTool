@@ -31,6 +31,7 @@ public class FileStorage implements Storage {
     private volatile long lastUpdateTime = System.currentTimeMillis();
     private Map<String, HashSet<String>> subscribers = new HashMap<String, HashSet<String>>();
     private Map<String, HashSet<String>> alerts = new HashMap<String, HashSet<String>>();
+    private Set<String> quotaAlertSubscribers = new HashSet<String>();
     private String alertingEmail;
     private String alertingPassword;
     private int pageSize;
@@ -38,6 +39,7 @@ public class FileStorage implements Storage {
 
     private Lock subscribersLock = new ReentrantLock(true);
     private Lock alertsLock = new ReentrantLock(true);
+    private Lock quotaAlertsLock = new ReentrantLock(true);
 
     @Required
     public void setPageSize(int pageSize) {
@@ -95,6 +97,30 @@ public class FileStorage implements Storage {
                 }
             } finally {
                 subscribersLock.unlock();
+            }
+        }
+    }
+
+    @Override
+    public void subscribeToQuotaAlert(String emailAddress) {
+        if (isNotBlank(emailAddress)) {
+            try {
+                quotaAlertsLock.lock();
+                quotaAlertSubscribers.add(emailAddress);
+            } finally {
+                quotaAlertsLock.unlock();
+            }
+        }
+    }
+
+    @Override
+    public void unsubscribeToQuotaAlert(String emailAddress) {
+        if (isNotBlank(emailAddress)) {
+            try {
+                quotaAlertsLock.lock();
+                quotaAlertSubscribers.remove(emailAddress);
+            } finally {
+                quotaAlertsLock.unlock();
             }
         }
     }
@@ -159,6 +185,7 @@ public class FileStorage implements Storage {
     @Override
     public synchronized void addMessage(String[] path, String timestamp, String message) {
         if (needToWipe()) {
+            //sendNotification("Storage quota reached.", quotaAlertSubscribers);
             wipe();
         }
 
@@ -509,6 +536,16 @@ public class FileStorage implements Storage {
     }
 
     private void sendNotification(String filter, String message, String path) {
+        StringBuffer sb = new StringBuffer();
+        sb.append("Alert!\n");
+        sb.append("Application specification: ").append(path).append("\n");
+        sb.append("Filter: ").append(filter).append("\n");
+        sb.append("Message: ").append(message).append("\n");
+
+        sendNotification(sb.toString(), subscribers.get(filter));
+    }
+
+    private void sendNotification(String message, Set<String> subscribers) {
         Email email = new SimpleEmail();
         email.setHostName("smtp.gmail.com");
         email.setSmtpPort(587);
@@ -526,17 +563,12 @@ public class FileStorage implements Storage {
         }
         email.setSubject("GDLogTool alert");
         try {
-            StringBuffer sb = new StringBuffer();
-            sb.append("Alert!\n");
-            sb.append("Application specification: ").append(path).append("\n");
-            sb.append("Filter: ").append(filter).append("\n");
-            sb.append("Message: ").append(message).append("\n");
-            email.setMsg(sb.toString());
+            email.setMsg(message);
         } catch (EmailException ex) {
             logger.error(ex.getMessage(), ex);
             return;
         }
-        for (String subscriber : subscribers.get(filter)) {
+        for (String subscriber : subscribers) {
             try {
                 email.addTo(subscriber);
             } catch (EmailException ex) {

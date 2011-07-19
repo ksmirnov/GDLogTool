@@ -149,6 +149,8 @@ public class FileStorageTest {
 
     @Test
     public void wipeTest() {
+        fileStorage.subscribeToQuotaAlert("gdlogtool@gmail.com");
+
         long size = (((long) 1 << 20) + 15) / 5;
         StringBuffer sb = new StringBuffer();
         for (long i = 0; i < size; i++) {
@@ -181,7 +183,7 @@ public class FileStorageTest {
         fileStorage.unsubscribe(filter, "gdlogtool@gmail.com");
         fileStorage.addMessage(path1, logDate1, "aaaab");
         fileStorage.deleteDirectory(path1);
-    }*/
+    } */
 
     @Test
     public void alertsStorageTest() {

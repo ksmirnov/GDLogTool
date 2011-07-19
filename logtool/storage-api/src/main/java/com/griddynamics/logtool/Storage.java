@@ -81,6 +81,18 @@ public interface Storage {
     Map<String, HashSet<String>> getSubscribers();
 
     /**
+     * This method subscribes user for storage quota reached alerts.
+     * @param emailAddress - email address to which to send alerts
+     */
+    void subscribeToQuotaAlert(String emailAddress);
+
+    /**
+     * This method unsubscribes user for storage quota reached alerts.
+     * @param emailAddress - email address to which to send alerts
+     */
+    void unsubscribeToQuotaAlert(String emailAddress);
+
+    /**
      * This method removes from file storage alert filter
      * recorded in the form of regular expression.
      * @param filter - filter for alerts
