@@ -21,21 +21,23 @@ public class FileStorageTest {
 
     private static final String logDate1 = "2011-12-12T03:09:53";
     private static final String logDate2 = "2011-5-5T12:35:46";
+    private static final String logDate3 = "2011-1-1T09:21:59";
 
     private static final String logName1 = "2011-12-Dec.log";
     private static final String logName2 = "2011-05-May.log";
+    private static final String logName3 = "2011-01-Jan.log";
 
     private static final String logMsg = "log";
 
     private static final String logFolder = "TestLogs/";
-
+    private static final String logFolderWithoutSlash = "TestLogs";
     private FileStorage fileStorage;
 
     @Before
     public void initialize() {
         BeanFactory factory = new ClassPathXmlApplicationContext("fileStorageConfiguration.xml");
         fileStorage = (FileStorage) factory.getBean("fileStorage");
-        fileStorage.setLogFolder(logFolder);
+        fileStorage.setLogFolder(logFolderWithoutSlash);
     }
 
     @Test
@@ -153,13 +155,16 @@ public class FileStorageTest {
             sb.append("qwerty");
         }
 
+        fileStorage.addMessage(path1, logDate2, "test_2");
+        fileStorage.addMessage(path1, logDate3, "test_3");
         fileStorage.addMessage(path1, logDate1, sb.toString());
+
         fileStorage.addMessage(path1, logDate1, "wipe!");
 
-        List<String> expectedList2 = new ArrayList<String>();
-        expectedList2.add("03:09:53 wipe!");
+        List<String> expectedList = new ArrayList<String>();
+        expectedList.add("03:09:53 wipe!");
 
-        assertEquals(expectedList2, fileStorage.getLog(path1, logName1));
+        assertEquals(expectedList, fileStorage.getLog(path1, logName1));
 
         fileStorage.deleteLog(path1, logName1);
     }
@@ -223,17 +228,17 @@ public class FileStorageTest {
         expected.put(fileName1, new HashMap<Integer, List<Integer>>());
         expected.put(fileName2, new HashMap<Integer, List<Integer>>());
 
-        /*expected.get(fileName1).put(0, new ArrayList<Integer>());
-        expected.get(fileName2).put(0, new ArrayList<Integer>());
-
-        int first = "03:09:53 String for testest search".indexOf("test");
-        int second = "03:09:53 String for testest search".indexOf("test", first + 1);
-
-        expected.get(fileName1).get(0).add(first);
-        expected.get(fileName1).get(0).add(second);
-
-        expected.get(fileName2).get(0).add(first);
-        expected.get(fileName2).get(0).add(second);*/
+//        expected.get(fileName1).put(0, new ArrayList<Integer>());
+//        expected.get(fileName2).put(0, new ArrayList<Integer>());
+//
+//        int first = "03:09:53 String for testest search".indexOf("test");
+//        int second = "03:09:53 String for testest search".indexOf("test", first + 1);
+//
+//        expected.get(fileName1).get(0).add(first);
+//        expected.get(fileName1).get(0).add(second);
+//
+//        expected.get(fileName2).get(0).add(first);
+//        expected.get(fileName2).get(0).add(second);
 
         expected.get(fileName1).put(1, new ArrayList<Integer>());
         expected.get(fileName2).put(1, new ArrayList<Integer>());

@@ -22,6 +22,7 @@ public class FileStorage implements Storage {
     private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
     private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormat.forPattern("yyyy-dd-MMM");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("HH:mm:ss");
+    private static final int DAY_PATTERN_STRING_LENGTH = 11;
 
     private String logFolder = "";
     private long maxFolderSize;
@@ -33,6 +34,7 @@ public class FileStorage implements Storage {
     private String alertingEmail;
     private String alertingPassword;
     private int pageSize;
+    private List<DateTime> dates = new ArrayList<DateTime>();
 
     private Lock subscribersLock = new ReentrantLock(true);
     private Lock alertsLock = new ReentrantLock(true);
@@ -167,33 +169,36 @@ public class FileStorage implements Storage {
         if (dir.mkdirs()) {
             lastUpdateTime = System.currentTimeMillis();
         }
-        String fileName = addToPath(logPath, constructFileName(timestamp));
+        String fileName = constructFileName(timestamp);
+        String fullFileName = addToPath(logPath, fileName);
         FileWriter fileWriter = null;
-        File log = new File(fileName);
+        File log = new File(fullFileName);
         long size = log.length();
         String messageWithTime = createMessage(message, timestamp);
         try {
-            fileWriter = new FileWriter(fileName, true);
+            fileWriter = new FileWriter(fullFileName, true);
             fileWriter.append(messageWithTime);
             fileWriter.append("\n");
         } catch (IOException ex) {
-            logger.error("Tried to append message to: " + fileName, ex);
+            logger.error("Tried to append message to: " + fullFileName, ex);
             return;
         } finally {
             try {
                 fileWriter.flush();
                 fileWriter.close();
             } catch (IOException ex) {
-                logger.error("Tried to close file: " + fileName, ex);
+                logger.error("Tried to close file: " + fullFileName, ex);
                 return;
             }
         }
+
+        addDate(fileName);
 
         addToFileSystem(fileSystem, clearPath);
 
         curFolderSize += (log.length() - size);
 
-        checkForAlerts(message, fileName, timestamp);
+        checkForAlerts(message, fullFileName, timestamp);
     }
 
     @Override
@@ -340,7 +345,8 @@ public class FileStorage implements Storage {
         for (int i = 0; i < dirs.length; i++) {
             if (dirs[i].isDirectory()) {
                 hasOnlyFiles = false;
-                break;
+            } else {
+                addDate(dirs[i].getName());
             }
         }
         if (hasOnlyFiles) {
@@ -368,16 +374,50 @@ public class FileStorage implements Storage {
         return curFolderSize > maxFolderSize;
     }
 
+    private boolean needToWipeRec() {
+        return curFolderSize > maxFolderSize * 0.9;
+    }
+
     private void wipe() {
-        File root = new File(logFolder);
-        File[] files = root.listFiles();
-        for (File f : files) {
-            if (!deleteDirectory(f)) {
-                logger.error("Couldn't delete directory: " + f.getAbsolutePath());
-            }
+        if (!wipe(new String[0])) {
+            dates.remove(0);
+            wipe();
         }
-        curFolderSize = 0;
-        fileSystem.getChildren().clear();
+    }
+
+    private boolean wipe(String[] path) {
+        String curPath = buildPath(path);
+        String fileName = constructFileName(dates.get(0).toString());
+        File log = new File(addToPath(curPath, fileName));
+        File defaultLog = new File(addToPath(curPath, "default.log"));
+        if (defaultLog.exists()) {
+            deleteLog(path, "default.log");
+        }
+        if (needToWipeRec() && log.exists()) {
+           deleteLog(path, fileName);
+        }
+        if (needToWipeRec()) {
+            File folder = new File(curPath);
+            File[] dirs = folder.listFiles();
+            if (dirs == null) {
+                return false;
+            }
+            for (File dir : dirs) {
+                if (dir.isDirectory()) {
+                    String[] newPath = new String[path.length + 1];
+                    for (int i = 0; i < path.length; i++) {
+                        newPath[i] = path[i];
+                    }
+                    newPath[path.length] = dir.getName();
+                    if (wipe(newPath)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } else {
+            return true;
+        }
     }
 
     private long measureSize(String path) {
@@ -549,6 +589,24 @@ public class FileStorage implements Storage {
                 }
             }
             return false;
+        }
+    }
+
+    private void addDate(String fileName) {
+        if (fileName.equals("default.log")) {
+            return;
+        }
+        DateTime date = DAY_FORMATTER.parseDateTime(fileName.substring(0, DAY_PATTERN_STRING_LENGTH));
+        if (dates.isEmpty()) {
+            dates.add(date);
+        } else {
+            int index = 0;
+            while (index != dates.size() && dates.get(index).isBefore(date)) {
+                index++;
+            }
+            if (index == dates.size() || dates.get(index).isAfter(date)) {
+                dates.add(index, date);
+            }
         }
     }
 }
