@@ -289,24 +289,14 @@ public class FileStorage implements Storage {
             i++;
         }
 
-        if (i == pageSize / bufferSize) {
-            int bytesRemaining = pageSize % bufferSize;
-            long curPos = startPos + i * bufferSize;
-            if (bytesRemaining != 0 && curPos < fileLen) {
-                int bytesNeedToRead = bytesRemaining > (fileLen - curPos) ? (int)(fileLen - curPos) : bytesRemaining;
-                ByteBuffer buffer = ByteBuffer.allocate(bytesNeedToRead);
-                fc.read(buf, curPos);
-                outputStream.write(buffer.array());
-            }
-        } else {
-            long curPos = startPos + i * bufferSize;
-            int bytesRemaining = (int) (fileLen - curPos);
-
-            if (bytesRemaining != 0 && curPos < fileLen) {
-                ByteBuffer buffer = ByteBuffer.allocate(bytesRemaining);
-                fc.read(buffer, fileLen - bytesRemaining);
-                outputStream.write(buffer.array());
-            }
+        long curPos = startPos + i * bufferSize;
+        long bytesRemainingInFile = fileLen - curPos;
+        int bytesRemainingToRead = pageSize - i * bufferSize;
+        int bytesToRead = bytesRemainingToRead > bytesRemainingInFile ? (int) bytesRemainingInFile : bytesRemainingToRead;
+        if (bytesToRead > 0) {
+            ByteBuffer buffer = ByteBuffer.allocate(bytesToRead);
+            fc.read(buffer, curPos);
+            outputStream.write(buffer.array());
         }
     }
 
