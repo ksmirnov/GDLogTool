@@ -29,6 +29,8 @@
         <nettyVersion>3.2.4.Final</nettyVersion>
         <log4jVersion>1.2.16</log4jVersion>
         <mockitoVersion>1.8.5</mockitoVersion>
+         <commonsEmailVersion>1.2</commonsEmailVersion>
+        <servletApiVersion>2.5</servletApiVersion>
     </properties>
 
     <dependencyManagement>
@@ -103,6 +105,16 @@
                 <artifactId>mockito-all</artifactId>
                 <version>${mockitoVersion}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-email</artifactId>
+                <version>${commonsEmailVersion}</version>
+            </dependency>
+            <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+            <version>${servletApiVersion}</version>
+        </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -124,5 +136,6 @@
             </plugin>
         </plugins>
     </build>
-    
+
 </project>
+
