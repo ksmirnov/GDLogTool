@@ -36,29 +36,30 @@ public class LogEventDecoderTest {
         } else {
             return;
         }
-        buffer = ChannelBuffers.buffer(baos.size() * 2);
+        buffer = ChannelBuffers.buffer(baos.size());
         for(int i = 0; i < bArray.length / 2; i ++) {
             buffer.writeByte(bArray[i]);
         }
-        // 1st call: half of an object with all required flags
+        // 1st call: stream initialization with half of an object
         decoderInstance.decode(null, null, buffer);
         for(int i = bArray.length / 2; i < bArray.length; i ++) {
             buffer.writeByte(bArray[i]);
         }
-        // 2nd call: rest of an object
+        // 2nd call: sending rest of an object
         output = decoderInstance.decode(null, null, buffer);
-        assertTrue("Object (with flags) hasn't returned", output != null);
+        assertTrue("First object hasn't returned", output != null);
+        buffer = ChannelBuffers.buffer(baos.size());
         for(int i = 4; i < bArray.length / 2; i ++) {
             buffer.writeByte(bArray[i]);
         }
-        // 3rd call: half of an object without required flags
+        // 3rd call: buffer has changed, sending half of an object
         decoderInstance.decode(null, null, buffer);
         for(int i = bArray.length / 2; i < bArray.length; i ++) {
             buffer.writeByte(bArray[i]);
         }
-        // 4th call: rest of an object
+        // 4th call: sending rest of an object
         output = decoderInstance.decode(null, null, buffer);
-        assertTrue("Object (without flags) hasn't returned", output != null);
+        assertTrue("Second object hasn't returned", output != null);
     }
 
 }
