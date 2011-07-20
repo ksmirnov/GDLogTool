@@ -50,4 +50,14 @@ public class Consumer {
         bootstrap.setOption("child.keepAlive", true);
         bootstrap.bind(new InetSocketAddress(port));
     }
+    public static void startServer(short socketServerPort){
+        if(socketServerPort != -1){
+            String[] socketServerPortSting = {Short.toString(socketServerPort)};
+
+            main(socketServerPortSting);
+        } else {
+            main(new String[0]);
+        }
+
+    }
 }
