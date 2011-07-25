@@ -31,6 +31,7 @@
         <mockitoVersion>1.8.5</mockitoVersion>
         <commonsEmailVersion>1.2</commonsEmailVersion>
         <commonsLangVersion>2.6</commonsLangVersion>
+        <servletApiVersion>2.5</servletApiVersion>
     </properties>
 
     <dependencyManagement>
@@ -118,6 +119,12 @@
                 <artifactId>commons-lang</artifactId>
                 <version>${commonsLangVersion}</version>
             </dependency>
+
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>servlet-api</artifactId>
+                <version>${servletApiVersion}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -139,5 +146,6 @@
             </plugin>
         </plugins>
     </build>
-    
+
 </project>
+
