@@ -5,4 +5,6 @@ import javax.servlet.http.HttpServletResponse;
 
 public interface Action {
      public String perform(HttpServletRequest request, HttpServletResponse response);
+     public void setStorage(Storage storage);
+
 }
