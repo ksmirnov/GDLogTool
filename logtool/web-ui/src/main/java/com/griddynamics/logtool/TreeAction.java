@@ -11,23 +11,26 @@ import java.util.Map;
 import java.util.Set;
 
 public class TreeAction implements Action {
+    private Storage storage;
+
+    public void setStorage(Storage storage){
+        this.storage = storage;
+    }
 
     public String perform(HttpServletRequest request, HttpServletResponse response) {
-        BeanFactory springFactory = new ClassPathXmlApplicationContext("fileStorageConfiguration.xml");
-        Storage storage = (Storage) springFactory.getBean("fileStorage");
         Tree FileTree = storage.getTree(-1);
 
         return getJson(FileTree);
     }
 
-    protected static String getJson(Tree FileTree) {
+    protected String getJson(Tree FileTree) {
         Map<String, Tree> tree = FileTree.getChildren();
         List<String> path = new LinkedList<String>();
         return "[ " + getJsonFromMap(path, tree) + " ]";
 
     }
 
-    protected static String getJsonFromMap(List path, Map<String, Tree> tree) {
+    protected String getJsonFromMap(List path, Map<String, Tree> tree) {
         StringBuilder output = new StringBuilder("");
         Set<String> keySet = tree.keySet();
         if (!keySet.isEmpty()) {
@@ -47,8 +50,6 @@ public class TreeAction implements Action {
                     String[] pathArray = new String[path.size()];
                     path.toArray(pathArray);
                     path.remove(path.size() - 1);
-                    BeanFactory springFactory = new ClassPathXmlApplicationContext("fileStorageConfiguration.xml");
-                    Storage storage = (Storage)springFactory.getBean("fileStorage");
                     Set<String> logsSet = storage.getTree(0, pathArray).getChildren().keySet();
                     for (String logName : logsSet) {
                         output.append("{text: '").append(logName).append("',leaf:true},");
