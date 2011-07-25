@@ -6,9 +6,13 @@
     <bean id="fileStorageConfigurator" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations" value="classpath:fileStorage.properties" />
     </bean>
-    <bean id="fileStorage" class="com.griddynamics.logtool.FileStorage">
+
+    <bean id="fileStorage" class="com.griddynamics.logtool.FileStorage" init-method="createTreeFromDisk">
         <property name="logFolder" value="${logFolder}"/>
         <property name="maxFolderSize" value="${maxFolderSize}"/>
+        <property name="alertingEmail" value="${alertingEmail}"/>
+        <property name="alertingPassword" value="${alertingPassword}"/>
+        <property name="pageSize" value="${pageSize}"/>
+        <property name="bufferSize" value="${bufferSize}"/>
     </bean>
-
 </beans>

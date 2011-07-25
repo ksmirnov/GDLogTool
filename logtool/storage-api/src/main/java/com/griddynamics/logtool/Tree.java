@@ -1,12 +1,13 @@
 package com.griddynamics.logtool;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Basic node of storage structure. One node equals one folder in storage structure.
  */
-public class Tree {
+public class Tree implements Serializable {
     /**
      * Children represented as map where keys are subfolder's names and values are Tree objects
      */

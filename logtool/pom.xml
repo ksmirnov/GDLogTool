@@ -29,7 +29,8 @@
         <nettyVersion>3.2.4.Final</nettyVersion>
         <log4jVersion>1.2.16</log4jVersion>
         <mockitoVersion>1.8.5</mockitoVersion>
-         <commonsEmailVersion>1.2</commonsEmailVersion>
+        <commonsEmailVersion>1.2</commonsEmailVersion>
+        <commonsLangVersion>2.6</commonsLangVersion>
         <servletApiVersion>2.5</servletApiVersion>
     </properties>
 
@@ -100,21 +101,30 @@
                 <artifactId>junit</artifactId>
                 <version>${junitVersion}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-all</artifactId>
                 <version>${mockitoVersion}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-email</artifactId>
                 <version>${commonsEmailVersion}</version>
             </dependency>
+
             <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <version>${servletApiVersion}</version>
-        </dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commonsLangVersion}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>servlet-api</artifactId>
+                <version>${servletApiVersion}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
