@@ -22,9 +22,13 @@ public class Consumer {
     private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
     private static final short DEF_PORT = 4444;
+    private static final short SYSLOG_DEF_PORT = 4445;
 
 
     public static void main(String[] args) {
+            boolean startServerForSocketAppender = true;
+            boolean startServerForSyslogAppender = true; 
+
         short port = DEF_PORT;
         if(args.length == 1) {
             try {
@@ -33,22 +37,43 @@ public class Consumer {
                 logger.error(e.getMessage(), e);
             }
         }
-        Executor threadPool = Executors.newCachedThreadPool();
-        ChannelFactory factory = new NioServerSocketChannelFactory(threadPool, threadPool);
-        ServerBootstrap bootstrap = new ServerBootstrap(factory);
         BeanFactory springFactory = new ClassPathXmlApplicationContext("fileStorageConfiguration.xml");
         final FileStorage fileStorage = (FileStorage) springFactory.getBean("fileStorage");
-        final ConsumerHandler consumerHandler = new ConsumerHandler(fileStorage);
-        bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-            public ChannelPipeline getPipeline() {
-                return Channels.pipeline(
-                        new LogEventDecoder(),
-                        consumerHandler);
-            }
-        });
 
-        bootstrap.setOption("child.keepAlive", true);
-        bootstrap.bind(new InetSocketAddress(port));
+        if (startServerForSocketAppender) {
+            Executor threadPool = Executors.newCachedThreadPool();
+            ChannelFactory factory = new NioServerSocketChannelFactory(threadPool, threadPool);
+            ServerBootstrap bootstrap = new ServerBootstrap(factory);
+            final ConsumerHandler consumerHandler = new ConsumerHandler(fileStorage);
+
+            bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+                public ChannelPipeline getPipeline() {
+                    return Channels.pipeline(
+                            new LogEventDecoder(),
+                            consumerHandler);
+                }
+            });
+
+            bootstrap.setOption("child.keepAlive", true);
+            bootstrap.bind(new InetSocketAddress(port));
+        }
+
+        if (startServerForSyslogAppender) {
+            ChannelFactory syslogChanelFactory =
+                    new NioDatagramChannelFactory(
+                            Executors.newCachedThreadPool());
+
+            ConnectionlessBootstrap syslogServerBootstrap = new ConnectionlessBootstrap(syslogChanelFactory);
+
+            syslogServerBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+                public ChannelPipeline getPipeline() {
+                    return Channels.pipeline(new SyslogServerHandler(fileStorage));
+                }
+            });
+            syslogServerBootstrap.setOption("child.keepAlive", true);
+            syslogServerBootstrap.bind(new InetSocketAddress(SYSLOG_DEF_PORT));
+        }
+
     }
     public static void startServer(short socketServerPort){
         if(socketServerPort != -1){
