@@ -5,11 +5,15 @@ import java.util.Map;
 
 public class ActionFactory {
 
-    public Action create(String actionName) {
+    public Action create(String actionName,Storage storage) {
         if (actionName.equalsIgnoreCase("getTree")) {
-            return new TreeAction();
+            TreeAction ta = new TreeAction();
+            ta.setStorage(storage);
+            return ta;
         } else if (actionName.equalsIgnoreCase("getLog")) {
-            return new LogAction();
+            LogAction la = new LogAction();
+            la.setStorage(storage);
+            return la;
         } else {
             throw new RuntimeException(" was unable to find an action named '" + actionName + "'.");
         }

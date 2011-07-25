@@ -17,9 +17,8 @@ public final class LogToolServlet extends HttpServlet {
 
     public void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-        WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(getServletContext());
-        Action action = factory.create(req.getParameter("action"));
-        action.setStorage((Storage)ctx.getBean("fileStorage"));
+ 	WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(getServletContext());
+        Action action = factory.create(req.getParameter("action"),(Storage)ctx.getBean("fileStorage"));
         String response = action.perform(req, resp);
         PrintWriter out = resp.getWriter();
         out.println(response);
