@@ -112,18 +112,24 @@ class UDPSendler {
     public void sendText(String text) {
         if (notSendedText.length() != 0) {
             text = notSendedText + text;
+            notSendedText = "";
         }
-        if (text.lastIndexOf("\n") != text.length() - 1) {
-            notSendedText = text.substring(text.lastIndexOf("\n") + 1, text.length());
-            text = text.substring(0, text.lastIndexOf("\n"));
-        }
-        StringTokenizer st = new StringTokenizer(text, "\n");
-        while (st.hasMoreElements()) {
-            try {
-                sendMsg(st.nextToken());
-            } catch (IOException e) {
-                e.printStackTrace();
+        if(text.lastIndexOf("\n") == -1){
+            notSendedText = text;
+        } else {
+            if (text.lastIndexOf("\n") != text.length() - 1) {
+                notSendedText = text.substring(text.lastIndexOf("\n") + 1, text.length());
+                text = text.substring(0, text.lastIndexOf("\n"));
+            }
+            StringTokenizer st = new StringTokenizer(text, "\n");
+            while (st.hasMoreElements()) {
+                try {
+                    sendMsg(st.nextToken());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
 }
+
