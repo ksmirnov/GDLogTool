@@ -56,6 +56,11 @@
                 <artifactId>web-ui</artifactId>
                 <version>${projectVersion}</version>
             </dependency>
+            <dependency>
+                <groupId>com.griddynamics.logtool</groupId>
+                <artifactId>filetailer</artifactId>
+                <version>${projectVersion}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -138,6 +143,7 @@
         <module>storage-api</module>
         <module>file-storage</module>
         <module>web-ui</module>
+	<module>filetailer</module>
     </modules>
 
     <build>
