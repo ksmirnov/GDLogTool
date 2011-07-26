@@ -99,7 +99,7 @@ public class FileStorageTest {
         fileStorage.deleteLog(new String[0], "2000-12-Dec.log");
     }
 
-/*    @Test
+    @Test
     public void getTreeTest() {
         fileStorage.addMessage(path1, logDate1, logMsg);
         fileStorage.addMessage(path2, logDate1, logMsg);
@@ -137,7 +137,7 @@ public class FileStorageTest {
         fileStorage.deleteDirectory(path2);
         fileStorage.deleteDirectory(path3);
         fileStorage.deleteDirectory(path4);
-    }*/
+    }
 
     @Test
     public void deleteTest() {
