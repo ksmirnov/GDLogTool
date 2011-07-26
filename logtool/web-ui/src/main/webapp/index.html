@@ -44,7 +44,6 @@
                     rootVisible: false,
                     anchor: '100% 100%',
                     store: treestore,
-                    selModel: Ext.create('Ext.selection.CheckboxModel'),
                     listeners: {
                         itemclick: function(view, record, item, index, e) {
                             if (record.isLeaf()) {
@@ -57,7 +56,14 @@
                             e.stopEvent();
                             contextMenu.showAt(e.getXY());
                         }
-                    }
+                    },
+                    dockedItems: [{
+                        xtype: 'toolbar',
+                        items: {
+                            icon: 'extjs/resources/delete.gif',
+                            handler: deleteHandler
+                        }
+                    }]
                 });
 
                 var map = new Ext.KeyMap(Ext.get('treePanel'), {
@@ -66,15 +72,15 @@
                 });
 
                 function deleteHandler() {
-                    var selModel = treePanel.getSelectionModel();
-                    var selNodes = selModel.getSelection();
-                    if (selNodes.length > 0) {
-                        text = selNodes.length > 1 ? selNodes.length + ' items' : '\'' + selNodes[0].get('text') + '\'';
+                    var view = treePanel.getView();
+                    var chkNodes = view.getChecked();
+                    if (chkNodes.length > 0) {
+                        text = chkNodes.length > 1 ? chkNodes.length + ' items' : '\'' + chkNodes[0].get('text') + '\'';
                         Ext.MessageBox.confirm('Delete confirmation', 'Do you really want to delete ' + text + '?', function(btn) {
                             if (btn == 'yes') {
-                                while (selNodes.length > 0) {
-                                    deleteNode(selNodes[0]);
-                                    selNodes = selModel.getSelection();
+                                while (chkNodes.length > 0) {
+                                    deleteNode(chkNodes[0]);
+                                    chkNodes = view.getChecked();
                                 }
                             }
                         });

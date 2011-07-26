@@ -35,21 +35,21 @@ public class TreeAction implements Action {
                 Tree tempTree = tree.get(s);
                 if (tempTree != null) {
                     String folderDown = "";
-                    output.append("{text:'").append(s).append("', expanded: true, children: [");
+                    output.append("{text:'").append(s).append("', expanded: true, checked:false, children: [");
                     Map<String, Tree> tempMap = tempTree.getChildren();
                     path.add(s);
                     folderDown = getJsonFromMap(path, tempMap);
                     path.remove(path.size() - 1);
                     output.append(folderDown).append("] },");
                 } else {
-                    output.append("{text:'").append(s).append("', expanded: true, children: [");
+                    output.append("{text:'").append(s).append("', expanded: true, checked:false, children: [");
                     path.add(s);
                     String[] pathArray = new String[path.size()];
                     path.toArray(pathArray);
                     path.remove(path.size() - 1);
                     Set<String> logsSet = storage.getTree(0, pathArray).getChildren().keySet();
                     for (String logName : logsSet) {
-                        output.append("{text: '").append(logName).append("',leaf:true},");
+                        output.append("{text: '").append(logName).append("',leaf:true,checked:false},");
                     }
                     output.delete( output.length() - 1,output.length()).append(" ] },");
                 }
