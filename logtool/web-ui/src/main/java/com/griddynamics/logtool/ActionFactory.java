@@ -1,8 +1,5 @@
 package com.griddynamics.logtool;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class ActionFactory {
 
     public Action create(String actionName,Storage storage) {
@@ -14,6 +11,14 @@ public class ActionFactory {
             LogAction la = new LogAction();
             la.setStorage(storage);
             return la;
+        } else if (actionName.equalsIgnoreCase("deleteLog")) {
+            DeleteLogAction dla = new DeleteLogAction();
+            dla.setStorage(storage);
+            return dla;
+        } else if (actionName.equalsIgnoreCase("deleteDirectory")) {
+            DeleteDirectoryAction dda = new DeleteDirectoryAction();
+            dda.setStorage(storage);
+            return dda;
         } else {
             throw new RuntimeException(" was unable to find an action named '" + actionName + "'.");
         }

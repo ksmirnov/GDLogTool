@@ -13,6 +13,7 @@
         var lineForPage = 30;
 
         var treeFromRoot;
+
         Ext.Ajax.request({
             url : '/logtool' ,
             params : { action : 'gettree' },
@@ -28,7 +29,16 @@
                     }
                 });
 
+                var contextMenu = new Ext.menu.Menu({
+                    items: [{
+                            text: 'Delete',
+                            handler: deleteHandler
+                        }
+                    ]
+                });
+
                 var treePanel = new Ext.tree.TreePanel({
+                    id: 'tree',
                     renderTo: 'div1',
                     title: 'Log File System',
                     rootVisible: false,
@@ -37,22 +47,68 @@
                     listeners: {
                         itemclick: function(view, record, item, index, e) {
                             if (record.isLeaf()) {
-                                selectedFilePath = record.get('text');
-                                node = record.parentNode;
-                                while (!node.isRoot()) {
-                                    selectedFilePath = selectedFilePath + '/' + node.get('text');
-                                    node = node.parentNode;
-                                }
+                                selectedFilePath = getFilePath(record);
                                 partViewed = -1;
                                 writeText(selectedFilePath);
-
                             }
+                        },
+                        itemcontextmenu: function(view, record, item, index, e) {
+                            e.stopEvent();
+                            contextMenu.showAt(e.getXY());
                         }
-
                     }
                 });
 
+                var map = new Ext.KeyMap(Ext.get('tree'), {
+                    key: [Ext.EventObject.DELETE, Ext.EventObject.BACKSPACE],
+                    fn: deleteHandler
+                });
 
+                function deleteHandler() {
+                    var selModel = treePanel.getSelectionModel();
+                    var selNode = selModel.getSelection()[0];
+                    if (selNode) {
+                        Ext.MessageBox.confirm('Delete confirmation', 'Do you really want to delete \'' + selNode.get('text') + '\'?', function(btn) {
+                            if (btn == 'yes') {
+                                selectedPath = getFilePath(selNode);
+
+                                if (selNode.isLeaf()) {
+                                    document.getElementById('div2').innerHTML = '';
+                                    Ext.Ajax.request({
+                                        url : '/logtool' ,
+                                        params : { action: 'deletelog', path: selectedPath },
+                                        method: 'GET'
+                                    });
+                                } else {
+                                    Ext.Ajax.request({
+                                        url : '/logtool' ,
+                                        params : { action: 'deletedirectory', path: selectedPath },
+                                        method: 'GET'
+                                    });
+                                }
+
+                                node = selNode.parentNode;
+                                selNode.remove();
+
+                                while (!node.hasChildNodes() && !node.isRoot()) {
+                                    temp = node;
+                                    node = node.parentNode;
+                                    node.removeChild(temp);
+                                }
+                            }
+                        });
+                    }
+                };
+
+                function getFilePath(record) {
+                    selectedFilePath = record.get('text');
+                    node = record.parentNode;
+                    while (!node.isRoot()) {
+                        selectedFilePath = selectedFilePath + '/' + node.get('text');
+                        node = node.parentNode;
+                    }
+                    return selectedFilePath;
+                };
             },
             failure: function (result, request) {
                 Ext.MessageBox.alert('Failed', result.responseText);
@@ -89,13 +145,8 @@
                             failure: function (result, request) {
                                 Ext.MessageBox.alert('Failed', result.responseText);
                             }
-
                         });
-
-        }
-        ;
-
-
+        };
     </script>
 
 
