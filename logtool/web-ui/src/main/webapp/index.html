@@ -38,11 +38,13 @@
                 });
 
                 var treePanel = new Ext.tree.TreePanel({
+                    id: 'treePanel',
                     renderTo: 'div1',
                     title: 'Log File System',
                     rootVisible: false,
                     anchor: '100% 100%',
                     store: treestore,
+                    selModel: Ext.create('Ext.selection.CheckboxModel'),
                     listeners: {
                         itemclick: function(view, record, item, index, e) {
                             if (record.isLeaf()) {
@@ -58,41 +60,21 @@
                     }
                 });
 
-                var map = new Ext.KeyMap(Ext.get('tree'), {
+                var map = new Ext.KeyMap(Ext.get('treePanel'), {
                     key: [Ext.EventObject.DELETE, Ext.EventObject.BACKSPACE],
                     fn: deleteHandler
                 });
 
                 function deleteHandler() {
                     var selModel = treePanel.getSelectionModel();
-                    var selNode = selModel.getSelection()[0];
-                    if (selNode) {
-                        Ext.MessageBox.confirm('Delete confirmation', 'Do you really want to delete \'' + selNode.get('text') + '\'?', function(btn) {
+                    var selNodes = selModel.getSelection();
+                    if (selNodes.length > 0) {
+                        text = selNodes.length > 1 ? selNodes.length + ' items' : '\'' + selNodes[0].get('text') + '\'';
+                        Ext.MessageBox.confirm('Delete confirmation', 'Do you really want to delete ' + text + '?', function(btn) {
                             if (btn == 'yes') {
-                                selectedPath = getFilePath(selNode);
-
-                                if (selNode.isLeaf()) {
-                                    document.getElementById('div2').innerHTML = '';
-                                    Ext.Ajax.request({
-                                        url : '/logtool' ,
-                                        params : { action: 'deletelog', path: selectedPath },
-                                        method: 'GET'
-                                    });
-                                } else {
-                                    Ext.Ajax.request({
-                                        url : '/logtool' ,
-                                        params : { action: 'deletedirectory', path: selectedPath },
-                                        method: 'GET'
-                                    });
-                                }
-
-                                node = selNode.parentNode;
-                                selNode.remove();
-
-                                while (!node.hasChildNodes() && !node.isRoot()) {
-                                    temp = node;
-                                    node = node.parentNode;
-                                    node.removeChild(temp);
+                                while (selNodes.length > 0) {
+                                    deleteNode(selNodes[0]);
+                                    selNodes = selModel.getSelection();
                                 }
                             }
                         });
@@ -107,6 +89,34 @@
                         node = node.parentNode;
                     }
                     return selectedFilePath;
+                };
+
+                function deleteNode(selNode) {
+                    selectedPath = getFilePath(selNode);
+
+                    if (selNode.isLeaf()) {
+                        document.getElementById('div2').innerHTML = '';
+                        Ext.Ajax.request({
+                            url : '/logtool' ,
+                            params : { action: 'deletelog', path: selectedPath },
+                            method: 'GET'
+                        });
+                    } else {
+                        Ext.Ajax.request({
+                            url : '/logtool' ,
+                            params : { action: 'deletedirectory', path: selectedPath },
+                            method: 'GET'
+                        });
+                    }
+
+                    node = selNode.parentNode;
+                    selNode.remove();
+
+                    while (!node.hasChildNodes() && !node.isRoot()) {
+                        temp = node;
+                        node = node.parentNode;
+                        node.removeChild(temp);
+                    }
                 };
             },
             failure: function (result, request) {
