@@ -186,6 +186,9 @@ public class FileStorageTest {
 
         assertEquals(expectedList, fileStorage.getLog(path1, logName1));
 
+        Tree allTree = fileStorage.getTree(-1);
+        assertEquals(1, allTree.getChildren().keySet().size());
+
         fileStorage.deleteLog(path1, logName1);
     }
 

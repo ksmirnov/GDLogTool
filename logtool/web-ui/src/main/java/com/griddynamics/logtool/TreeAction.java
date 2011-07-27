@@ -7,13 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TreeAction implements Action {
-    private Storage storage;
-
-    public void setStorage(Storage storage){
-        this.storage = storage;
-    }
-
+public class TreeAction extends Action {
     public String perform(HttpServletRequest request, HttpServletResponse response) {
         Tree FileTree = storage.getTree(-1);
 
