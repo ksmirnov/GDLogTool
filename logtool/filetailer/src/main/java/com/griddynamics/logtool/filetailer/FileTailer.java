@@ -3,6 +3,7 @@ package com.griddynamics.logtool.filetailer;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -12,16 +13,25 @@ public class FileTailer {
     private Map<String, Thread> activeWatchingFiles = new HashMap<String, Thread>();
 
     public static void main(String[] args) {
-        String filepath = "/home/slivotov/workspace/testForFileTailer";
+        Properties props = new Properties();
+        try {
+            InputStream in = FileTailer.class.getResourceAsStream("/filetailerConfig.properties")    ;
+            props.load(in);
+            in.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         FileTailer ft = new FileTailer();
-        ft.addFileForWatching(filepath,"localhost",4445);
+        ft.addFileForWatching(props.getProperty("filepath"),
+                props.getProperty("address"), Integer.parseInt(props.getProperty("port")));
+
 
     }
 
-    public void addFileForWatching(String filepath,String host,int port) {
+    public void addFileForWatching(String filepath, String host, int port) {
         File fileForWatching = new File(filepath);
         if (fileForWatching.exists()) {
-            WatchingFile watchingFile = new WatchingFile(fileForWatching,host,port);
+            WatchingFile watchingFile = new WatchingFile(fileForWatching, host, port);
             Thread t = new Thread(watchingFile);
             activeWatchingFiles.put(filepath, t);
             t.start();
@@ -43,14 +53,14 @@ class WatchingFile implements Runnable {
     private String host;
     private int port;
 
-    public WatchingFile(File fileForWatching,String host, int port){
+    public WatchingFile(File fileForWatching, String host, int port) {
         this.fileForWatching = fileForWatching;
         this.host = host;
         this.port = port;
     }
 
     public void run() {
-        UDPSendler sendler = new UDPSendler(host,port);
+        UDPSendler sendler = new UDPSendler(host, port);
         long prevModifyTime = fileForWatching.lastModified();
         FileInputStream fis = null;
         FileChannel channel = null;
@@ -91,22 +101,24 @@ class UDPSendler {
     private static int port = 4445;
     private InetAddress IPAddress;
     private String notSendedText = "";
+    private DatagramSocket clientSocket;
 
-    UDPSendler(String host, int port){
-         this.port = port;
+    UDPSendler(String host, int port) {
+        this.port = port;
         try {
             this.IPAddress = InetAddress.getByName(host);
+            clientSocket = new DatagramSocket();
         } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (SocketException e) {
             e.printStackTrace();
         }
     }
 
     public void sendMsg(String msg) throws IOException, UnknownHostException {
-        DatagramSocket clientSocket = new DatagramSocket();
         byte[] sendData = msg.getBytes();
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
         clientSocket.send(sendPacket);
-        clientSocket.close();
     }
 
     public void sendText(String text) {
@@ -114,7 +126,7 @@ class UDPSendler {
             text = notSendedText + text;
             notSendedText = "";
         }
-        if(text.lastIndexOf("\n") == -1){
+        if (text.lastIndexOf("\n") == -1) {
             notSendedText = text;
         } else {
             if (text.lastIndexOf("\n") != text.length() - 1) {
@@ -132,4 +144,3 @@ class UDPSendler {
         }
     }
 }
-
