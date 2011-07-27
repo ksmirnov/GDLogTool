@@ -474,7 +474,7 @@ public class FileStorage implements Storage {
             deleteLog(path, "default.log");
         }
         if (needToWipeRec() && log.exists()) {
-           deleteLog(path, fileName);
+            deleteLog(path, fileName);
         }
         if (needToWipeRec()) {
             File folder = new File(curPath);
