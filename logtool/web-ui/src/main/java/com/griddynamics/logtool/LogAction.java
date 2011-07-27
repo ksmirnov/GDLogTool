@@ -1,37 +1,18 @@
 package com.griddynamics.logtool;
 
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.StringTokenizer;
 
-public class LogAction implements Action {
-    private Storage storage;
+import static com.griddynamics.logtool.PathConstructor.getPath;
 
-    public void setStorage(Storage storage){
-        this.storage = storage;
-    }
-
-
+public class LogAction extends Action {
     public String perform(HttpServletRequest req, HttpServletResponse resp) {
         return "response = " + getLog(req.getParameter("path"),
                 Integer.parseInt(req.getParameter("partToView")),
                 Integer.parseInt(req.getParameter("lines")));
     }
 
-    public List<String> getPath(String pathString){
-        StringTokenizer stTok = new StringTokenizer(pathString, "/");
-        List<String> pathList = new LinkedList<String>();
-        while(stTok.hasMoreElements()){
-            pathList.add(0,stTok.nextToken());
-        }
-        return pathList;
-    }
-    
     public PartToView getLogToView(List<String> logList,int partToView, int count){
         PartToView ptw = new PartToView();
         int logToView = count;
