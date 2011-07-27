@@ -19,6 +19,10 @@ public class ActionFactory {
             DeleteDirectoryAction dda = new DeleteDirectoryAction();
             dda.setStorage(storage);
             return dda;
+        } else if (actionName.equalsIgnoreCase("alertsAction")) {
+            AlertsAction aa = new AlertsAction();
+            aa.setStorage(storage);
+            return aa;
         } else {
             throw new RuntimeException(" was unable to find an action named '" + actionName + "'.");
         }

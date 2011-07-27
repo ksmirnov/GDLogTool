@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+     <import resource="fileStorageConfiguration.xml"/>
+
+    <bean id="consumer" class="com.griddynamics.logtool.Consumer" init-method="startServers">
+        <property name="storage" ref="fileStorage"/>
+        <property name="log4jPort" value="4444"/>
+        <property name="syslogPort" value="4445"/>
+    </bean>
+
+</beans>

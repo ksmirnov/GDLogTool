@@ -23,7 +23,8 @@ public class ConsumerHandler extends SimpleChannelHandler {
 
     private static final String DELIM = ".";
 
-    private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private final DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("HH:mm:ss");
     private final Storage storage;
 
     public ConsumerHandler(Storage storage) {
@@ -44,7 +45,7 @@ public class ConsumerHandler extends SimpleChannelHandler {
         }
         if(e.getMessage() instanceof LoggingEvent) {
             LoggingEvent loggingEvent = (LoggingEvent) e.getMessage();
-            String message = loggingEvent.getMessage().toString();
+            String message = timeFormatter.print(loggingEvent.timeStamp) + " " + loggingEvent.getMessage().toString();
             DateTime date = new DateTime(loggingEvent.timeStamp);
             String timestamp = date.toString(dateTimeFormatter);
             String[] entry = new String[3];
