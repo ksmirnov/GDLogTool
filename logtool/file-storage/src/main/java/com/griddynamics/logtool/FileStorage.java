@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 public class FileStorage implements Storage {
     private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
-    private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormat.forPattern("yyyy-dd-MMM");
+    private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormat.forPattern("yyyy-dd-MMM").withLocale(Locale.ENGLISH);
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("HH:mm:ss");
     private static final int DAY_PATTERN_STRING_LENGTH = 11;
 
@@ -210,10 +210,9 @@ public class FileStorage implements Storage {
         FileWriter fileWriter = null;
         File log = new File(fullFileName);
         long size = log.length();
-        String messageWithTime = createMessage(message, timestamp);
         try {
             fileWriter = new FileWriter(fullFileName, true);
-            fileWriter.append(messageWithTime);
+            fileWriter.append(message);
             fileWriter.append("\n");
         } catch (IOException ex) {
             logger.error("Tried to append message to: " + fullFileName, ex);
@@ -474,7 +473,7 @@ public class FileStorage implements Storage {
             deleteLog(path, "default.log");
         }
         if (needToWipeRec() && log.exists()) {
-            deleteLog(path, fileName);
+           deleteLog(path, fileName);
         }
         if (needToWipeRec()) {
             File folder = new File(curPath);
@@ -541,20 +540,10 @@ public class FileStorage implements Storage {
     private String constructFileName(String timestamp) {
         try {
             DateTime dateTime = new DateTime(timestamp);
-            return new StringBuffer(DAY_FORMATTER.withLocale(Locale.ENGLISH).print(dateTime)).append(".log").toString();
+            return new StringBuffer(DAY_FORMATTER.print(dateTime)).append(".log").toString();
         } catch (Exception ex) {
             logger.error("Couldn't parse date format: " + timestamp, ex);
             return "default.log";
-        }
-    }
-
-    private String createMessage(String message, String timestamp) {
-        try {
-            DateTime dateTime = new DateTime(timestamp);
-            return new StringBuffer(TIME_FORMATTER.print(dateTime)).append(" ").append(message).toString();
-        } catch (Exception ex) {
-            logger.error("Couldn't parse date format: " + timestamp, ex);
-            return "**:**:** " + message;
         }
     }
 
@@ -581,9 +570,8 @@ public class FileStorage implements Storage {
         }
         for (String filter : filters) {
             if (Pattern.matches(filter, message)) {
-                String messageWithTime = createMessage(message, timestamp);
-                //sendNotification(filter, messageWithTime, path);
-                addAlert(filter, messageWithTime);
+                //sendNotification(filter, message, path);
+                addAlert(filter, message);
             }
         }
     }

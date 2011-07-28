@@ -14,8 +14,11 @@
 
         var treeFromRoot;
 
+	var loc = location.href;
+	loc = loc.substring(0, loc.lastIndexOf('/'));
+
         Ext.Ajax.request({
-            url : '/logtool' ,
+            url : loc + '/logtool' ,
             params : { action : 'gettree' },
             method: 'GET',
             success: function (result, request) {
@@ -103,13 +106,13 @@
                     if (selNode.isLeaf()) {
                         document.getElementById('div2').innerHTML = '';
                         Ext.Ajax.request({
-                            url : '/logtool' ,
+                            url : loc + '/logtool' ,
                             params : { action: 'deletelog', path: selectedPath },
                             method: 'GET'
                         });
                     } else {
                         Ext.Ajax.request({
-                            url : '/logtool' ,
+                            url : loc + '/logtool' ,
                             params : { action: 'deletedirectory', path: selectedPath },
                             method: 'GET'
                         });
@@ -146,7 +149,7 @@
             }
 
                         Ext.Ajax.request({
-                            url : '/logtool' ,
+                            url : loc + '/logtool' ,
                             params : { action : 'getlog',path: pathToLog,partToView: partViewed, lines: lineForPage},
                             method: 'GET',
                             success: function (result, request) {

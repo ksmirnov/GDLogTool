@@ -53,8 +53,8 @@ public class FileStorageTest {
         fileStorage.addMessage(path1, logDate1, logMsg);
 
         List<String> expectedList = new ArrayList<String>();
-        expectedList.add("03:09:53 " + logMsg);
-        expectedList.add("03:09:53 " + logMsg);
+        expectedList.add(logMsg);
+        expectedList.add(logMsg);
 
         assertEquals(expectedList, fileStorage.getLog(path1, logName1));
 
@@ -70,7 +70,7 @@ public class FileStorageTest {
         fileStorage.getLogNew(path1, logName1, 0, fos);
         fos.flush();
         fos.close();
-        String expectedLine = "03:09:53 " + logMsg;
+        String expectedLine = logMsg;
         BufferedReader reader = new BufferedReader(new FileReader("test"));
         assertEquals(expectedLine, reader.readLine());
         assertEquals(expectedLine, reader.readLine());
@@ -182,12 +182,9 @@ public class FileStorageTest {
         fileStorage.addMessage(path1, logDate1, "wipe!");
 
         List<String> expectedList = new ArrayList<String>();
-        expectedList.add("03:09:53 wipe!");
+        expectedList.add("wipe!");
 
         assertEquals(expectedList, fileStorage.getLog(path1, logName1));
-
-        Tree allTree = fileStorage.getTree(-1);
-        assertEquals(1, allTree.getChildren().keySet().size());
 
         fileStorage.deleteLog(path1, logName1);
     }
@@ -218,14 +215,14 @@ public class FileStorageTest {
         Set<String> expectedSet2 = new HashSet<String>();
 
         expectedSet1.add(filter);
-        expectedSet2.add("03:09:53 aaaab");
-        expectedSet2.add("03:09:53 aaaaaaaaab");
+        expectedSet2.add("aaaab");
+        expectedSet2.add("aaaaaaaaab");
 
         assertEquals(expectedSet1, fileStorage.getAlerts().keySet());
         assertEquals(expectedSet2, fileStorage.getAlerts().get(filter));
 
-        fileStorage.removeAlert("a*b", "03:09:53 aaaab");
-        expectedSet2.remove("03:09:53 aaaab");
+        fileStorage.removeAlert("a*b", "aaaab");
+        expectedSet2.remove("aaaab");
 
         assertEquals(expectedSet2, fileStorage.getAlerts().get(filter));
 
@@ -266,8 +263,8 @@ public class FileStorageTest {
         expected.get(fileName1).put(1, new ArrayList<Integer>());
         expected.get(fileName2).put(1, new ArrayList<Integer>());
 
-        int first = "03:09:53 String for testest search".indexOf("test");
-        int second = "03:09:53 String for testest search".indexOf("test", first + 1);
+        int first = "String for testest search".indexOf("test");
+        int second = "String for testest search".indexOf("test", first + 1);
 
         expected.get(fileName1).get(1).add(first);
         expected.get(fileName1).get(1).add(second);
