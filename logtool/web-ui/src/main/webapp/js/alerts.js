@@ -278,11 +278,11 @@ Ext.onReady(function(){
 
     var alertsPanel = Ext.create('Ext.form.Panel', {
         frame:true,
-        title: 'GDLogTool alerts',
         bodyStyle:'padding: 0',
         width: '100%',
         height: '100%',
         layout:'column',
+        
         items: [{
 		    title: 'Filters',
 		    columnWidth: 2/5,
@@ -291,6 +291,20 @@ Ext.onReady(function(){
 		    title: 'Items',
 		    columnWidth: 3/5,
 		    items: alertsGrid
+		}],
+		dockedItems : [{
+			xtype : 'toolbar',
+			items : [
+			'<b style = "font-size: 16; color: black">GDLogTool alerts</b>',
+			'->', 
+				{
+					icon : 'extjs/resources/themes/images/default/shared/left-btn.gif',
+					text: '<b style = "font-size: 12; color: black">Logs</b>',
+					handler : function() {
+				        window.location = loc + "/";
+				    }
+				}
+			]
 		}]
     });
 
