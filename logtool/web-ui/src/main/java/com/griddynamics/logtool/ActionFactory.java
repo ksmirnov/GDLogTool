@@ -23,6 +23,10 @@ public class ActionFactory {
             AlertsAction aa = new AlertsAction();
             aa.setStorage(storage);
             return aa;
+        } else if (actionName.equalsIgnoreCase("doSearch")) {
+            GrepSearchAction gsa = new GrepSearchAction();
+            gsa.setStorage(storage);
+            return gsa;
         } else {
             throw new RuntimeException(" was unable to find an action named '" + actionName + "'.");
         }

@@ -14,8 +14,15 @@
 
         var treeFromRoot;
 
-	var loc = location.href;
-	loc = loc.substring(0, loc.lastIndexOf('/'));
+        var loc = location.href;
+        loc = loc.substring(0, loc.lastIndexOf('/'));
+
+        var searchResult;
+        var pos;
+        var searchResApps = [];
+        var searchResPages = [];
+        var searchResCurApp;
+        var searchResCurPage;
 
         Ext.Ajax.request({
             url : loc + '/logtool' ,
@@ -40,6 +47,8 @@
                     ]
                 });
 
+                var searchField = new Ext.form.TextField({id: 'searchValue', fieldLabel: 'Search request'});
+
                 var treePanel = new Ext.tree.TreePanel({
                     id: 'treePanel',
                     renderTo: 'div1',
@@ -62,16 +71,27 @@
                     },
                     dockedItems: [{
                         xtype: 'toolbar',
-                        items: {
-                            icon: 'extjs/resources/delete.gif',
-                            handler: deleteHandler
-                        }
+                        items: [
+                            {
+                                icon: 'extjs/resources/delete.gif',
+                                handler: deleteHandler
+                            },
+                            {
+                                text: 'search',
+                                handler: openSearchWindow
+                            }
+                        ]
                     }]
                 });
 
-                var map = new Ext.KeyMap(Ext.get('treePanel'), {
+                var panelMap = new Ext.KeyMap(Ext.get('treePanel'), {
                     key: [Ext.EventObject.DELETE, Ext.EventObject.BACKSPACE],
                     fn: deleteHandler
+                });
+
+                var textFieldMap = new Ext.KeyMap(Ext.get('searchValue'), {
+                    key: Ext.EventObject.ENTER,
+                    fn: doSearch
                 });
 
                 function deleteHandler() {
@@ -104,7 +124,7 @@
                     selectedPath = getFilePath(selNode);
 
                     if (selNode.isLeaf()) {
-                        document.getElementById('div2').innerHTML = '';
+                        clearDiv();
                         Ext.Ajax.request({
                             url : loc + '/logtool' ,
                             params : { action: 'deletelog', path: selectedPath },
@@ -127,12 +147,186 @@
                         node.removeChild(temp);
                     }
                 };
+
+                function openSearchWindow() {
+                    var searchWindow = new Ext.Window({
+                        title: 'Search',
+                        resizable: false,
+                        width: 500,
+                        items: searchField,
+                        buttons: [{
+                            text: 'Prev page'
+                        },{
+                            text: 'Next page'
+                        },{
+                            text: 'Prev',
+                            handler: prev
+                        },{
+                            text: 'Next',
+                            handler: next
+                        },{
+                            text: 'Search',
+                            handler: doSearch
+                        },{
+                            text: 'Cancel',
+                            handler: function() {
+                                searchWindow.close();
+                                clearDiv();
+                                var searchResApps = [];
+                                var searchResPages = [];
+                            }
+                        }]
+                    });
+                    searchWindow.show();
+                };
+
+                function doSearch() {
+                    clearDiv();
+                    var selModel = treePanel.getSelectionModel();
+                    var selNodes = selModel.getSelection();
+                    if (selNodes.length > 0) {
+                        var selNode = selNodes[0];
+                        var path = getFilePath(selNode);
+                        var searchRequest = searchField.getValue();
+                        Ext.Ajax.request({
+                            url : loc + '/logtool' ,
+                            params : { action: 'doSearch', path: path, searchRequest: searchRequest, pageSize: '4024' },
+                            method: 'GET',
+                            success: function (result, request) {
+                                searchResult = getSearchResult(result.responseText);
+
+                                searchResApps = [];
+                                for (app in searchResult) {
+                                    searchResApps.push(app);
+                                };
+                                searchResApps.sort();
+                                searchResCurApp = 0;
+
+                                updateSearchPos();
+
+                                searchResultMsgBox();
+                                printCurPage();
+                            },
+                            failure: function (result, request) {
+                                Ext.MessageBox.alert('Failed', result.responseText);
+                            }
+                        });
+                    }
+                };
+
+                function searchResultMsgBox() {
+                    var res = '';
+                    if (searchResApps.length == 0) {
+                        res += 'nothing found.';
+                    } else {
+                        for (resApp in searchResult) {
+                            res += resApp + ': ' + countOccurrences(resApp) + '<br>';
+                        }
+                    }
+                    Ext.MessageBox.show({title: 'Search results', msg: res, buttons: Ext.MessageBox.OK});
+                };
+
+                function countOccurrences(app) {
+                    var pages = searchResult[app];
+                    var res = 0;
+                    for (page in pages) {
+                        res += pages[page].length;
+                    }
+                    return res;
+                };
+
+                function next() {
+                    if (searchResApps.length > 0) {
+                        if (searchResCurPage + 1 == searchResPages.length) {
+                            if (searchResCurApp + 1 != searchResApps.length) {
+                                searchResCurApp++;
+                                updateSearchPos();
+                            }
+                        } else {
+                            searchResCurPage++;
+                        }
+                        printCurPage();
+                    }
+                };
+
+                function prev() {
+                    if (searchResApps.length > 0) {
+                        if (searchResCurPage - 1 < 0) {
+                            if (searchResCurApp - 1 >= 0) {
+                                searchResCurApp--;
+                                updateSearchPos();
+                            }
+                        } else {
+                            searchResCurPage--;
+                        }
+                        printCurPage();
+                    }
+                };
+
+                function clearDiv() {
+                    document.getElementById('div2').innerHTML = '';
+                };
+
+                function printCurPage()  {
+                    var view = '';
+
+                    view += searchResApps[searchResCurApp] + '<br>Page ' + searchResPages[searchResCurPage] + ' in line ' + searchResult[searchResApps[searchResCurApp]][searchResPages[searchResCurPage]] + '<br>';
+                    document.getElementById('div2').innerHTML = '<FONT style="BACKGROUND-COLOR: yellow">' + view + '</FONT>';
+                };
+
+                function updateSearchPos() {
+                    searchResPages = [];
+                    for (page in searchResult[searchResApps[searchResCurApp]]) {
+                        searchResPages.push(page);
+                    };
+                    searchResCurPage = 0;
+                    searchResPages.sort(function(a, b) {return parseInt(a) > parseInt(b)});
+                };
+
+                function getSearchResult(response) {
+                    var res = new Object();
+                    if (response.length == 3) {
+                        return res;
+                    }
+                    pos = 1;
+                    while (pos < response.length - 1) {
+                        res = parseFile(res, response);
+                    }
+                    return res;
+                };
+
+                function parseFile(obj, response) {
+                    var index = response.indexOf('={', pos);
+                    var file = response.substring(pos, index);
+                    obj[file] = new Object();
+                    pos = index + 2;
+                    while (response.charAt(pos) != '}') {
+                        obj[file] = parsePage(obj[file], response);
+                    };
+                    pos += 2;
+                    return obj;
+                };
+
+                function parsePage(obj, response) {
+                    if (response.charAt(pos) == ',') {
+                        pos += 2;
+                    };
+                    var index = response.indexOf('=[', pos);
+                    var page = response.substring(pos, index);
+                    pos = index + 2;
+                    index = response.indexOf(']', pos);
+                    var occurrences = response.substring(pos, index);
+                    obj[page] = occurrences.split(', ');
+                    pos = index + 1;
+                    return obj;
+                };
             },
             failure: function (result, request) {
                 Ext.MessageBox.alert('Failed', result.responseText);
             }
 
         });
+
         function writeText(pathToLog) {
             var prevViewed = partViewed;
             if (pathToLog == 'prev') {

@@ -36,7 +36,6 @@ public class FileStorage implements Storage {
     private Set<String> quotaAlertSubscribers = new HashSet<String>();
     private String alertingEmail;
     private String alertingPassword;
-    private int pageSize;
     private int bufferSize;
     private List<DateTime> dates = new ArrayList<DateTime>();
     private Map<String, FileChannel> openFiles = new HashMap<String, FileChannel>();
@@ -48,11 +47,6 @@ public class FileStorage implements Storage {
     @Required
     public void setBufferSize(int bufferSize) {
         this.bufferSize = bufferSize << 9;
-    }
-
-    @Required
-    public void setPageSize(int pageSize) {
-        this.pageSize = pageSize << 10;
     }
 
     @Required
@@ -184,11 +178,11 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request) throws IOException {
+    public Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request, int pageSize) throws IOException {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String logPath = buildPath(clearPath);
         Searcher searcher = new Searcher(request, pageSize);
-        return searcher.doSearch(logPath);
+        return searcher.doSearchNew(logPath);
     }
 
     @Override
@@ -267,7 +261,7 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public synchronized void getLogNew(String[] path, String name, int chunkNumber, OutputStream outputStream) throws IOException {
+    public synchronized void getLogNew(String[] path, String name, long startPos, int length, OutputStream outputStream) throws IOException {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String fileName = addToPath(buildPath(clearPath), name);
         if (!openFiles.containsKey(fileName)) {
@@ -278,22 +272,24 @@ public class FileStorage implements Storage {
         FileChannel fc = openFiles.get(fileName);
         ByteBuffer buf = ByteBuffer.allocate(bufferSize);
 
-        long startPos = chunkNumber * pageSize;
         long fileLen = fc.size();
         int i = 0;
 
-        while (i < pageSize / bufferSize && startPos + (i + 1) * bufferSize < fileLen) {
+
+        while (i < length / bufferSize && startPos + (i + 1) * bufferSize < fileLen) {
             fc.read(buf, startPos + i * bufferSize);
             outputStream.write(buf.array());
+            buf.clear();
             i++;
         }
 
         long curPos = startPos + i * bufferSize;
         long bytesRemainingInFile = fileLen - curPos;
-        int bytesRemainingToRead = pageSize - i * bufferSize;
+        int bytesRemainingToRead = length - i * bufferSize;
         int bytesToRead = bytesRemainingToRead > bytesRemainingInFile ? (int) bytesRemainingInFile : bytesRemainingToRead;
         if (bytesToRead > 0) {
             ByteBuffer buffer = ByteBuffer.allocate(bytesToRead);
+            fc.read(buffer, curPos);
             fc.read(buffer, curPos);
             outputStream.write(buffer.array());
         }
@@ -426,6 +422,7 @@ public class FileStorage implements Storage {
                 hasOnlyFiles = false;
             } else {
                 addDate(dirs[i].getName());
+                curFolderSize += dirs[i].length();
             }
         }
         if (hasOnlyFiles) {
