@@ -4,188 +4,28 @@
 
     <link rel="stylesheet" type="text/css" href="extjs/resources/css/ext-all.css">
     <script type="text/javascript" src="extjs/ext-all.js"></script>
+    <script type="text/javascript" src="js/index.js"></script>
 </head>
 <body>
-<P class="ext-standart">
-    <script type="text/javascript">
-        var selectedFilePath;
-        var partViewed;
-        var lineForPage = 30;
-
-        var treeFromRoot;
-
-	var loc = location.href;
-	loc = loc.substring(0, loc.lastIndexOf('/'));
-
-        Ext.Ajax.request({
-            url : loc + '/logtool' ,
-            params : { action : 'gettree' },
-            method: 'GET',
-            success: function (result, request) {
-                var treeFromRoot = Ext.JSON.decode(result.responseText);
-
-                var treestore = Ext.create('Ext.data.TreeStore', {
-                    root: {
-                        text: 'File System',
-                        expanded: true,
-                        children: treeFromRoot
-                    }
-                });
-
-                var contextMenu = new Ext.menu.Menu({
-                    items: [{
-                            text: 'Delete',
-                            handler: deleteHandler
-                        }
-                    ]
-                });
-
-                var treePanel = new Ext.tree.TreePanel({
-                    id: 'treePanel',
-                    renderTo: 'div1',
-                    title: 'Log File System',
-                    rootVisible: false,
-                    anchor: '100% 100%',
-                    store: treestore,
-                    listeners: {
-                        itemclick: function(view, record, item, index, e) {
-                            if (record.isLeaf()) {
-                                selectedFilePath = getFilePath(record);
-                                partViewed = -1;
-                                writeText(selectedFilePath);
-                            }
-                        },
-                        itemcontextmenu: function(view, record, item, index, e) {
-                            e.stopEvent();
-                            contextMenu.showAt(e.getXY());
-                        }
-                    },
-                    dockedItems: [{
-                        xtype: 'toolbar',
-                        items: {
-                            icon: 'extjs/resources/delete.gif',
-                            handler: deleteHandler
-                        }
-                    }]
-                });
-
-                var map = new Ext.KeyMap(Ext.get('treePanel'), {
-                    key: [Ext.EventObject.DELETE, Ext.EventObject.BACKSPACE],
-                    fn: deleteHandler
-                });
-
-                function deleteHandler() {
-                    var view = treePanel.getView();
-                    var chkNodes = view.getChecked();
-                    if (chkNodes.length > 0) {
-                        text = chkNodes.length > 1 ? chkNodes.length + ' items' : '\'' + chkNodes[0].get('text') + '\'';
-                        Ext.MessageBox.confirm('Delete confirmation', 'Do you really want to delete ' + text + '?', function(btn) {
-                            if (btn == 'yes') {
-                                while (chkNodes.length > 0) {
-                                    deleteNode(chkNodes[0]);
-                                    chkNodes = view.getChecked();
-                                }
-                            }
-                        });
-                    }
-                };
-
-                function getFilePath(record) {
-                    selectedFilePath = record.get('text');
-                    node = record.parentNode;
-                    while (!node.isRoot()) {
-                        selectedFilePath = selectedFilePath + '/' + node.get('text');
-                        node = node.parentNode;
-                    }
-                    return selectedFilePath;
-                };
-
-                function deleteNode(selNode) {
-                    selectedPath = getFilePath(selNode);
-
-                    if (selNode.isLeaf()) {
-                        document.getElementById('div2').innerHTML = '';
-                        Ext.Ajax.request({
-                            url : loc + '/logtool' ,
-                            params : { action: 'deletelog', path: selectedPath },
-                            method: 'GET'
-                        });
-                    } else {
-                        Ext.Ajax.request({
-                            url : loc + '/logtool' ,
-                            params : { action: 'deletedirectory', path: selectedPath },
-                            method: 'GET'
-                        });
-                    }
-
-                    node = selNode.parentNode;
-                    selNode.remove();
-
-                    while (!node.hasChildNodes() && !node.isRoot()) {
-                        temp = node;
-                        node = node.parentNode;
-                        node.removeChild(temp);
-                    }
-                };
-            },
-            failure: function (result, request) {
-                Ext.MessageBox.alert('Failed', result.responseText);
-            }
-
-        });
-        function writeText(pathToLog) {
-            var prevViewed = partViewed;
-            if (pathToLog == 'prev') {
-                pathToLog = selectedFilePath;
-                if (partViewed - lineForPage > lineForPage) {
-                    partViewed = partViewed - lineForPage;
-                } else {
-                    partViewed = lineForPage;
-                }
-            }
-            if (pathToLog == 'next') {
-                pathToLog = selectedFilePath;
-                partViewed = partViewed + lineForPage;
-            }
-
-                        Ext.Ajax.request({
-                            url : loc + '/logtool' ,
-                            params : { action : 'getlog',path: pathToLog,partToView: partViewed, lines: lineForPage},
-                            method: 'GET',
-                            success: function (result, request) {
-                                eval(result.responseText);
-                                var countLogs = parseInt(response.total);
-                                partViewed = parseInt(response.partViewed);
-                                document.getElementById('div2').innerHTML =
-                                        (' Page viewed ' + parseInt(partViewed / lineForPage) + ' from ' +
-                                                parseInt(countLogs / lineForPage) + '<br>' + response.log);
-                            },
-                            failure: function (result, request) {
-                                Ext.MessageBox.alert('Failed', result.responseText);
-                            }
-                        });
-        };
-    </script>
-
-
 <table width="100%" style="height:100%;border-width:2px;" border="true">
-    <tr style="height:50px;">
-        <th>Structure</th>
-        <th>View</th>
+    <tr style="height:30px; background-color: #BAD0EE;">
+        <th style="padding-left: 10px;"><h3>Structure</h3></th>
+        <th style="padding-left: 10px;"><h3>View</h3></th>
     </tr>
     <tr>
         <td width="20%">
             <div style="width:100%;height:100%;" id="div1"></div>
         </td>
         <td>
-            <table width="100%" style="height:50px">
+            <table width="100%" style="height: 28px; background-color: #D7E3F2;">
                 <tr>
-                    <td width="50%" align="left"><input type="button" value="Previous" onclick="writeText('prev')"/>
+                    <td id="prevEl" width="120px" align="left" style="padding-left: 10px;">
                     </td>
-                    <td width="50%" align="right"><input type="button" value="Next" onclick="writeText('next')"/></td>
+                    <td id="nextEl" align="left" style="padding-left: 10px;"></td>
+                    <td id="alertsEl" align="right" style="padding-right: 10px;"></td>
                 </tr>
             </table>
-            <div style="width:100%;height:100%;" id="div2"></div>
+            <div style="width:100%;height:100%; padding: 10px;color: black" id="div2"></div>
         </td>
     </tr>
 </table>
