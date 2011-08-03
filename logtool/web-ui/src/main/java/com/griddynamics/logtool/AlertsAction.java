@@ -2,6 +2,8 @@ package com.griddynamics.logtool;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Set;
 
 public class AlertsAction extends Action {
@@ -10,7 +12,7 @@ public class AlertsAction extends Action {
     
     private StringBuilder stringBuilder = new StringBuilder();
 
-    public String perform(HttpServletRequest req, HttpServletResponse resp) {
+    public void perform(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String subaction = req.getParameter("subaction");
         String out = "";
         if(subaction.equalsIgnoreCase("getFilters")) {
@@ -26,7 +28,9 @@ public class AlertsAction extends Action {
             removeFilter(req.getParameter("filter"));
             out = getFilters();
         }
-        return out;
+        PrintWriter output = resp.getWriter();
+        output.println(out);
+        output.close();
     }
 
     protected String getFilters() {

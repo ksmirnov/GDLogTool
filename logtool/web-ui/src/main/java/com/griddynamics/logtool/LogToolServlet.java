@@ -19,11 +19,6 @@ public final class LogToolServlet extends HttpServlet {
 
  	WebApplicationContext ctx = WebApplicationContextUtils.getWebApplicationContext(getServletContext());
         Action action = factory.create(req.getParameter("action"),(Storage)ctx.getBean("fileStorage"));
-        String response = action.perform(req, resp);
-        PrintWriter out = resp.getWriter();
-        out.println(response);
-        out.close();
-
-
+        action.perform(req, resp);
     }
 }

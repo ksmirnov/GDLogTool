@@ -1,8 +1,8 @@
 Ext.onReady(function() {
-    
-    var selectedFilePath;
+    var selectedFilePath = "";
     var partViewed;
-    var lineForPage = 30;
+    var lineForPage = 500;
+    var lastPage = false;
 
     var treeFromRoot;
 
@@ -21,7 +21,7 @@ Ext.onReady(function() {
     var searchResCurOcc;
     var searchBytesToLightFromPrevPage = 0;
     var searchPageToLightFirstBytes = -1;
-
+    
     var next = Ext.create('Ext.Button', {
         text: 'Next',
         width: 100,
@@ -75,7 +75,8 @@ Ext.onReady(function() {
 
             var searchField = new Ext.form.TextField({
                                     id: 'searchValue',
-                                    fieldLabel: 'Search request'
+                                    fieldLabel: 'Search request',
+                                    width: 489
                                 });
 
             var treePanel = new Ext.tree.TreePanel({
@@ -104,8 +105,8 @@ Ext.onReady(function() {
                         dockedItems : [{
                                     xtype : 'toolbar',
                                     items : [
-                                        'Actions with checked items:',
-                                       '->',
+                                    'Actions with checked items:',
+                                    '->', 
                                         {
                                             icon : 'extjs/resources/delete.gif',
                                             text: 'Delete',
@@ -202,10 +203,10 @@ Ext.onReady(function() {
                     items: searchField,
                     buttons: [{
                         text: 'Prev page',
-                        handler: nextPage
+                        handler: prevPage
                     },{
                         text: 'Next page',
-                        handler: prevPage
+                        handler: nextPage
                     },{
                         text: 'Prev',
                         handler: prev
@@ -222,6 +223,11 @@ Ext.onReady(function() {
                             clearDiv();
                             var searchResApps = [];
                             var searchResPages = [];
+                            searchField = new Ext.form.TextField({
+                                    id: 'searchValue',
+                                    fieldLabel: 'Search request',
+                                    width: 489
+                                });
                         }
                     }]
                 });
@@ -244,7 +250,7 @@ Ext.onReady(function() {
                             action: 'doSearch',
                             path: path,
                             searchRequest: searchRequest,
-                            pageSize: '4024'
+                            pageSize: lineForPage
                             },
                         method: 'GET',
                         success: function (result, request) {
@@ -257,10 +263,10 @@ Ext.onReady(function() {
                             searchResApps.sort();
                             searchResCurApp = 0;
 
-                            updateSearchPagePos();
+                            updateSearchPagePos('next');
 
                             searchResultMsgBox();
-                            printCurPage();
+                            printNewPage();
                         },
                         failure: function (result, request) {
                             Ext.MessageBox.alert('Failed', result.responseText);
@@ -300,18 +306,20 @@ Ext.onReady(function() {
                         if (searchResCurPage + 1 == searchResPages.length) {
                             if (searchResCurApp + 1 != searchResApps.length) {
                                 searchResCurApp++;
-                                updateSearchPagePos();
+                                updateSearchPagePos('next');
+                                //searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
+                                printNewPage();
                             }
                         } else {
                             searchResCurPage++;
                             searchResCurOcc = 0;
+                            searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
+                            printNewPage();
                         }
                     } else {
                         searchResCurOcc++;
+                        printCurPage();
                     }
-
-                    searchViewCurPage = searchResPages[searchResCurPage];
-                    printCurPage();
                 }
             };
 
@@ -322,32 +330,34 @@ Ext.onReady(function() {
                         if (searchResCurPage - 1 < 0) {
                             if (searchResCurApp - 1 >= 0) {
                                 searchResCurApp--;
-                                updateSearchPagePos();
+                                updateSearchPagePos('prev');
+                                //searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
+                                printNewPage();
                             }
                         } else {
                             searchResCurPage--;
-                            searchResCurOcc = 0;
+                            searchResCurOcc = searchResult[searchResApps[searchResCurApp]][searchResPages[searchResCurPage]].length - 1;
+                            searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
+                            printNewPage();
                         }
                     } else {
                         searchResCurOcc--;
+                        printCurPage();
                     }
-
-                    searchViewCurPage = searchResPages[searchResCurPage];
-                    printCurPage();
                 }
             };
 
             function nextPage() {
                 if (!searchLastPage) {
                     searchViewCurPage++;
-                    printCurPage();
+                    printNewPage();
                 }
             };
 
             function prevPage() {
-                if (searchViewCurPage - 1 >= 0) {
+                if (searchViewCurPage - 1 > 0) {
                     searchViewCurPage--;
-                    printCurPage();
+                    printNewPage();
                 }
             };
 
@@ -356,42 +366,69 @@ Ext.onReady(function() {
             };
 
             function printCurPage() {
+                var res = document.getElementById('div2').innerHTML;
+                res = res.replace(/<font style="BACKGROUND-COLOR: yellow">/g, '');
+                res = res.replace(/<\/font>/g, '');
+                var offset = res.indexOf('<br>', res.indexOf('<br>') + 1) + 4;
+                var actualPart = res.substring(offset, res.length).replace(/<br>/g, "\n");
+
+                var index = parseInt(searchResult[searchResApps[searchResCurApp]][searchViewCurPage][searchResCurOcc]);
+                var curLen = actualPart.length;
+                var endIndex = index + searchRequestLength > curLen ? curLen : index + searchRequestLength;
+
+                actualPart = actualPart.substring(0, index) + '<FONT style="BACKGROUND-COLOR: yellow">'
+                        + actualPart.substring(index, endIndex) + '</FONT>' + actualPart.substring(endIndex, curLen);
+
+                if (endIndex != curLen) {
+                    searchBytesToLightFromPrevPage = 0;
+                    searchPageToLightFirstBytes = -1;
+                } else {
+                    searchBytesToLightFromPrevPage = searchRequestLength - (curLen - index) + 1;
+                    searchPageToLightFirstBytes = searchViewCurPage + 1;
+                }
+                actualPart = replaceStringDelimiter(actualPart);
+
+                document.getElementById('div2').innerHTML = res.substring(0, offset) + actualPart;
+            };
+
+            function printNewPage() {
                 Ext.Ajax.request({
                     url : loc + '/logtool' ,
                     params : {
-                        action : 'searchgetlog',
-                        path: searchResApps[searchResCurApp],
-                        page: searchViewCurPage,
-                        pageSize: 4024
+                        action : 'getlog',
+                        path: reversePath(searchResApps[searchResCurApp]),
+                        partToView: (searchViewCurPage - 1) * lineForPage,
+                        lines: lineForPage
                     },
                     method: 'GET',
                     success: function (result, request) {
-                        var resp = replaceStringDelimetr(result.responseText);
+                        var resp = replaceStringDelimiter(result.responseText);
                         eval(resp);
-                        var res = response.log;
+                        var res = response.log.replace(/<br>/g, "\n");
                         var totalLength = parseInt(response.total);
-                        var totalPages = parseInt(Math.floor(totalLength / 4024));
+                        var totalPages = parseInt(Math.floor(totalLength / lineForPage));
                         searchLastPage = (searchViewCurPage == totalPages)
 
-                        if (searchViewCurPage == searchResPages[searchResCurPage];) {
-                            var index = searchResult[searchResApps[searchResCurApp]][searchViewCurPage][searchResCurOcc];
-                            var endIndex = index + searchRequestLength > res.length ? res.length : index + searchRequestLength;
+                        if (searchViewCurPage == parseInt(searchResPages[searchResCurPage])) {
+                            var index = parseInt(searchResult[searchResApps[searchResCurApp]][searchViewCurPage][searchResCurOcc]);
+                            var curLen = res.length;
+                            var endIndex = index + searchRequestLength > curLen ? curLen : index + searchRequestLength;
+
                             res = res.substring(0, index) + '<FONT style="BACKGROUND-COLOR: yellow">'
-                                    + res.substring(index, endIndex) + '</FONT>';
-                            if (endIndex != res.length) {
-                                res += res.substring(endIndex, res.length);
-                                res = lightFirstBytes(res);
+                                    + res.substring(index, endIndex) + '</FONT>' + res.substring(endIndex, curLen);
+
+                            res = lightFirstBytes(res);
+                            if (endIndex != curLen) {
                                 searchBytesToLightFromPrevPage = 0;
                                 searchPageToLightFirstBytes = -1;
                             } else {
-                                res = lightFirstBytes(res);
-                                searchBytesToLightFromPrevPage = searchRequestLength - (res.length - index);
+                                searchBytesToLightFromPrevPage = searchRequestLength - (curLen - index) + 1;
                                 searchPageToLightFirstBytes = searchViewCurPage + 1;
                             }
                         } else {
                             res = lightFirstBytes(res);
                         }
-
+                        res = replaceStringDelimiter(res);
                         res = searchResApps[searchResCurApp] + '<br>Page viewed '
                                 + searchViewCurPage + ' from ' + totalPages + '<br>' + res;
 
@@ -401,6 +438,15 @@ Ext.onReady(function() {
                         Ext.MessageBox.alert('Failed', result.responseText);
                     }
                 });
+            };
+
+            function reversePath(path) {
+                var pathSegments = path.split('/');
+                var res = '';
+                for (i = pathSegments.length - 1; i >= 0; i--) {
+                    res += pathSegments[i] + '/';
+                }
+                return res;
             };
 
             function lightFirstBytes(text) {
@@ -413,15 +459,20 @@ Ext.onReady(function() {
                 }
             };
 
-            function updateSearchPagePos() {
+            function updateSearchPagePos(val) {
                 searchResPages = [];
                 for (page in searchResult[searchResApps[searchResCurApp]]) {
                     searchResPages.push(page);
                 };
                 searchResCurPage = 0;
                 searchResPages.sort(function(a, b) {return parseInt(a) > parseInt(b)});
+                searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
 
-                searchResCurOcc = 0;
+                if (val == 'next') {
+                    searchResCurOcc = 0;
+                } else {
+                    searchResCurOcc = searchResult[searchResApps[searchResCurApp]][searchResPages[searchResCurPage]].length - 1;
+                }
             };
 
             function getSearchResult(response) {
@@ -471,10 +522,11 @@ Ext.onReady(function() {
         var prevViewed = partViewed;
         if (pathToLog == 'prev') {
             pathToLog = selectedFilePath;
-            if (partViewed - lineForPage > lineForPage) {
+            if (partViewed >= lineForPage) {
                 partViewed = partViewed - lineForPage;
+                lastPage = false;
             } else {
-                partViewed = lineForPage;
+                partViewed = 0;
             }
         }
         if (pathToLog == 'next') {
@@ -492,16 +544,42 @@ Ext.onReady(function() {
             },
             method : 'GET',
             success : function(result, request) {
-                eval(result.responseText);
+                var res = replaceStringDelimiter(result.responseText);
+                eval(res);
                 var countLogs = parseInt(response.total);
                 partViewed = parseInt(response.partViewed);
-                document.getElementById('div2').innerHTML = (' Page viewed '
-                        + parseInt(partViewed / lineForPage) + ' from '
-                        + parseInt(countLogs / lineForPage) + '<br>' + response.log);
+                if (partViewed >= countLogs - lineForPage) {
+                    lastPage = true;
+                }
+                document.getElementById('div2').innerHTML =
+                                (' Page viewed ' + parseInt(Math.ceil(partViewed / lineForPage)) +
+                                ' from ' + parseInt(Math.floor(countLogs / lineForPage)) +
+                                '<br>' + response.log);
+
             },
             failure : function(result, request) {
                 Ext.MessageBox.alert('Failed', result.responseText);
             }
         });
     };
+    
+    function replaceStringDelimiter(text) {
+        var pattern = /\r\n|\r|\n/g;
+        var new_text = text.replace(pattern, "<br>");
+        return new_text;
+    }
+    
+//    var updateLog = function update() {
+//        if (lastPage == true) {
+//            partViewed = -1;
+//            writeText(selectedFilePath);
+//        } else if (selectedFilePath != "") {
+//            writeText(selectedFilePath);
+//        }
+//    }
+//
+//    Ext.TaskManager.start({
+//        run: updateLog,
+//        interval: 5000
+//    });
 });
