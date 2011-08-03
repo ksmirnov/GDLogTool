@@ -12,7 +12,6 @@
         <property name="maxFolderSize" value="${maxFolderSize}"/>
         <property name="alertingEmail" value="${alertingEmail}"/>
         <property name="alertingPassword" value="${alertingPassword}"/>
-        <property name="pageSize" value="${pageSize}"/>
         <property name="bufferSize" value="${bufferSize}"/>
     </bean>
 </beans>

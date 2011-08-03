@@ -1,8 +1,9 @@
 Ext.onReady(function() {
 	
-	var selectedFilePath;
+	var selectedFilePath = "";
 	var partViewed;
-	var lineForPage = 30;
+	var lineForPage = 1500;
+	var lastPage = false;
 
 	var treeFromRoot;
 
@@ -177,10 +178,11 @@ Ext.onReady(function() {
 		var prevViewed = partViewed;
 		if (pathToLog == 'prev') {
 			pathToLog = selectedFilePath;
-			if (partViewed - lineForPage > lineForPage) {
+			if (partViewed >= lineForPage) {
 				partViewed = partViewed - lineForPage;
+				lastPage = false;
 			} else {
-				partViewed = lineForPage;
+				partViewed = 0;
 			}
 		}
 		if (pathToLog == 'next') {
@@ -198,16 +200,38 @@ Ext.onReady(function() {
 			},
 			method : 'GET',
 			success : function(result, request) {
-				eval(result.responseText);
+				var res = replaceStringDelimetr(result.responseText);
+				eval(res);
 				var countLogs = parseInt(response.total);
 				partViewed = parseInt(response.partViewed);
-				document.getElementById('div2').innerHTML = (' Page viewed '
-						+ parseInt(partViewed / lineForPage) + ' from '
-						+ parseInt(countLogs / lineForPage) + '<br>' + response.log);
+				if (partViewed >= countLogs - lineForPage)
+					{
+					lastPage = true;
+					}
+				document.getElementById('div2').innerHTML =
+		                        (' Page viewed ' + parseInt(Math.ceil(partViewed / 						lineForPage)) + ' from ' + parseInt(Math.floor(countLogs / 						lineForPage)) + '<br>' + response.log);
+
 			},
 			failure : function(result, request) {
 				Ext.MessageBox.alert('Failed', result.responseText);
 			}
 		});
 	};
+	function replaceStringDelimetr(text) {
+		var pattern = /\r\n|\r|\n/g;
+		var new_text = text.replace(pattern, "<br>");
+		return(new_text);
+	}
+	var updateLog = function update() {
+		if(lastPage == true){
+			partViewed = -1;
+			writeText(selectedFilePath);
+		}else if(selectedFilePath != ""){
+			writeText(selectedFilePath);
+		}
+	}
+	Ext.TaskManager.start({
+		run: updateLog,
+		interval: 5000
+	});
 });

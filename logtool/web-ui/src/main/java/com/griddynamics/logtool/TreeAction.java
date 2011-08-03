@@ -2,16 +2,19 @@ package com.griddynamics.logtool;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class TreeAction extends Action {
-    public String perform(HttpServletRequest request, HttpServletResponse response) {
+    public void perform(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Tree FileTree = storage.getTree(-1);
-
-        return getJson(FileTree);
+        PrintWriter out = response.getWriter();
+        out.println(getJson(FileTree));
+        out.close();
     }
 
     protected String getJson(Tree FileTree) {
@@ -21,8 +24,9 @@ public class TreeAction extends Action {
 
     }
 
-    protected String getJsonFromMap(List path, Map<String, Tree> tree) {
+    protected String getJsonFromMap(List<String> path, Map<String, Tree> tree) {
         StringBuilder output = new StringBuilder("");
+        output.append(getJsonFiles(path));
         Set<String> keySet = tree.keySet();
         if (!keySet.isEmpty()) {
             for (String s : keySet) {
@@ -52,5 +56,18 @@ public class TreeAction extends Action {
             output.append(" ");
         }
         return output.toString();
+    }
+
+       protected String getJsonFiles(List<String> path){
+        Set<String> filesSet = storage.getTree(0,path.toArray(new String[0])).getChildren().keySet();
+        if(filesSet.isEmpty()){
+            return "";
+        }else{
+            StringBuilder output = new StringBuilder("");
+            for(String file: filesSet){
+                output.append("{text: '").append(file).append("',leaf:true,checked:false},");
+            }
+            return output.toString();
+        }
     }
 }
