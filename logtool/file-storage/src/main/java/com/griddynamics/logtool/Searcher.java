@@ -35,15 +35,15 @@ public class Searcher {
             rafLog = new RandomAccessFile(dir.getAbsolutePath(), "r");
             byte[] buf = new byte[actualPageSize];
             long parts = rafLog.length() / pageSize;
-            for (int i = 0; i < parts + 1; i++) {
-                rafLog.seek(i * pageSize);
+            for (int i = 1; i < parts + 2; i++) {
+                rafLog.seek((i - 1) * pageSize);
                 String chunk = null;
                 int bytesRead = rafLog.read(buf);
                 if (bytesRead == actualPageSize) {
                     chunk = new String(buf);
                 } else {
                     byte[] buff = new byte[bytesRead];
-                    rafLog.seek(i * pageSize);
+                    rafLog.seek((i - 1) * pageSize);
                     rafLog.read(buff);
                     chunk = new String(buff);
                 }
@@ -51,36 +51,6 @@ public class Searcher {
             }
             rafLog.close();
         }
-
-//        File dir = new File(path);
-//        File[] logs = dir.listFiles();
-//
-//        for (File log : logs) {
-//            if (log.isFile()) {
-//                RandomAccessFile rafLog = null;
-//                rafLog = new RandomAccessFile(log.getAbsolutePath(), "r");
-//                byte[] buf = new byte[actualPageSize];
-//                long parts = rafLog.length() / pageSize;
-//                for (int i = 0; i < parts + 1; i++) {
-//                    rafLog.seek(i * pageSize);
-//                    String chunk = null;
-//                    int bytesRead = rafLog.read(buf);
-//                    if (bytesRead == actualPageSize) {
-//                        chunk = new String(buf);
-//                    } else {
-//                        byte[] buff = new byte[bytesRead];
-//                        rafLog.seek(i * pageSize);
-//                        rafLog.read(buff);
-//                        chunk = new String(buff);
-//                    }
-//
-//                    inStringSearch(chunk, i, pageSize, log.getAbsolutePath());
-//                }
-//                rafLog.close();
-//            } else {
-//                doSearchNew(log.getAbsolutePath());
-//            }
-//        }
 
         return results;
     }
@@ -105,26 +75,6 @@ public class Searcher {
             brLog.close();
         }
 
-//        File dir = new File(path);
-//        File[] logs = dir.listFiles();
-//
-//        for (File log : logs) {
-//            if (log.isFile()) {
-//                BufferedReader brLog = null;
-//                brLog = new BufferedReader(new FileReader(log));
-//                int lineNumber = 1;
-//                String line = brLog.readLine();
-//                while (line != null) {
-//                    inStringSearch(line, lineNumber, line.length(), log.getAbsolutePath());
-//                    lineNumber++;
-//                    line = brLog.readLine();
-//                }
-//                brLog.close();
-//            } else {
-//                doSearch(log.getAbsolutePath());
-//            }
-//        }
-
         return results;
     }
 
@@ -145,6 +95,5 @@ public class Searcher {
                 pos = maxLen;
             }
         }
-
     }
 }

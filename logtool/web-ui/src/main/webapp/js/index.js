@@ -11,11 +11,17 @@ Ext.onReady(function() {
 
     var searchResult;
     var pos;
+    var searchRequestLength;
+    var searchViewCurPage;
+    var searchLastPage = false;
     var searchResApps = [];
     var searchResPages = [];
     var searchResCurApp;
     var searchResCurPage;
-    
+    var searchResCurOcc;
+    var searchBytesToLightFromPrevPage = 0;
+    var searchPageToLightFirstBytes = -1;
+
     var next = Ext.create('Ext.Button', {
         text: 'Next',
         width: 100,
@@ -195,9 +201,11 @@ Ext.onReady(function() {
                     width: 500,
                     items: searchField,
                     buttons: [{
-                        text: 'Prev page'
+                        text: 'Prev page',
+                        handler: nextPage
                     },{
-                        text: 'Next page'
+                        text: 'Next page',
+                        handler: prevPage
                     },{
                         text: 'Prev',
                         handler: prev
@@ -228,6 +236,7 @@ Ext.onReady(function() {
                     var selNode = selNodes[0];
                     var path = getFilePath(selNode);
                     var searchRequest = searchField.getValue();
+                    searchRequestLength = searchRequest.length;
 
                     Ext.Ajax.request({
                         url : loc + '/logtool' ,
@@ -248,7 +257,7 @@ Ext.onReady(function() {
                             searchResApps.sort();
                             searchResCurApp = 0;
 
-                            updateSearchPos();
+                            updateSearchPagePos();
 
                             searchResultMsgBox();
                             printCurPage();
@@ -286,28 +295,58 @@ Ext.onReady(function() {
 
             function next() {
                 if (searchResApps.length > 0) {
-                    if (searchResCurPage + 1 == searchResPages.length) {
-                        if (searchResCurApp + 1 != searchResApps.length) {
-                            searchResCurApp++;
-                            updateSearchPos();
+                    var occurrences = searchResult[searchResApps[searchResCurApp]][searchResPages[searchResCurPage]];
+                    if (searchResCurOcc + 1 == occurrences.length) {
+                        if (searchResCurPage + 1 == searchResPages.length) {
+                            if (searchResCurApp + 1 != searchResApps.length) {
+                                searchResCurApp++;
+                                updateSearchPagePos();
+                            }
+                        } else {
+                            searchResCurPage++;
+                            searchResCurOcc = 0;
                         }
                     } else {
-                        searchResCurPage++;
+                        searchResCurOcc++;
                     }
+
+                    searchViewCurPage = searchResPages[searchResCurPage];
                     printCurPage();
                 }
             };
 
             function prev() {
                 if (searchResApps.length > 0) {
-                    if (searchResCurPage - 1 < 0) {
-                        if (searchResCurApp - 1 >= 0) {
-                            searchResCurApp--;
-                            updateSearchPos();
+                    var occurrences = searchResult[searchResApps[searchResCurApp]][searchResPages[searchResCurPage]];
+                    if (searchResCurOcc - 1 < 0) {
+                        if (searchResCurPage - 1 < 0) {
+                            if (searchResCurApp - 1 >= 0) {
+                                searchResCurApp--;
+                                updateSearchPagePos();
+                            }
+                        } else {
+                            searchResCurPage--;
+                            searchResCurOcc = 0;
                         }
                     } else {
-                        searchResCurPage--;
+                        searchResCurOcc--;
                     }
+
+                    searchViewCurPage = searchResPages[searchResCurPage];
+                    printCurPage();
+                }
+            };
+
+            function nextPage() {
+                if (!searchLastPage) {
+                    searchViewCurPage++;
+                    printCurPage();
+                }
+            };
+
+            function prevPage() {
+                if (searchViewCurPage - 1 >= 0) {
+                    searchViewCurPage--;
                     printCurPage();
                 }
             };
@@ -316,20 +355,73 @@ Ext.onReady(function() {
                 document.getElementById('div2').innerHTML = '';
             };
 
-            function printCurPage()  {
-                var view = '';
+            function printCurPage() {
+                Ext.Ajax.request({
+                    url : loc + '/logtool' ,
+                    params : {
+                        action : 'searchgetlog',
+                        path: searchResApps[searchResCurApp],
+                        page: searchViewCurPage,
+                        pageSize: 4024
+                    },
+                    method: 'GET',
+                    success: function (result, request) {
+                        var resp = replaceStringDelimetr(result.responseText);
+                        eval(resp);
+                        var res = response.log;
+                        var totalLength = parseInt(response.total);
+                        var totalPages = parseInt(Math.floor(totalLength / 4024));
+                        searchLastPage = (searchViewCurPage == totalPages)
 
-                view += searchResApps[searchResCurApp] + '<br>Page ' + searchResPages[searchResCurPage] + ' in line ' + searchResult[searchResApps[searchResCurApp]][searchResPages[searchResCurPage]] + '<br>';
-                document.getElementById('div2').innerHTML = '<FONT style="BACKGROUND-COLOR: yellow">' + view + '</FONT>';
+                        if (searchViewCurPage == searchResPages[searchResCurPage];) {
+                            var index = searchResult[searchResApps[searchResCurApp]][searchViewCurPage][searchResCurOcc];
+                            var endIndex = index + searchRequestLength > res.length ? res.length : index + searchRequestLength;
+                            res = res.substring(0, index) + '<FONT style="BACKGROUND-COLOR: yellow">'
+                                    + res.substring(index, endIndex) + '</FONT>';
+                            if (endIndex != res.length) {
+                                res += res.substring(endIndex, res.length);
+                                res = lightFirstBytes(res);
+                                searchBytesToLightFromPrevPage = 0;
+                                searchPageToLightFirstBytes = -1;
+                            } else {
+                                res = lightFirstBytes(res);
+                                searchBytesToLightFromPrevPage = searchRequestLength - (res.length - index);
+                                searchPageToLightFirstBytes = searchViewCurPage + 1;
+                            }
+                        } else {
+                            res = lightFirstBytes(res);
+                        }
+
+                        res = searchResApps[searchResCurApp] + '<br>Page viewed '
+                                + searchViewCurPage + ' from ' + totalPages + '<br>' + res;
+
+                        document.getElementById('div2').innerHTML = res;
+                    },
+                    failure: function (result, request) {
+                        Ext.MessageBox.alert('Failed', result.responseText);
+                    }
+                });
             };
 
-            function updateSearchPos() {
+            function lightFirstBytes(text) {
+                if (searchBytesToLightFromPrevPage > 0 && searchViewCurPage == searchPageToLightFirstBytes) {
+                    return '<FONT style="BACKGROUND-COLOR: yellow">' +
+                            text.substring(0, searchBytesToLightFromPrevPage) + '</FONT>'
+                            + text.substring(searchBytesToLightFromPrevPage, text.length);
+                } else {
+                    return text;
+                }
+            };
+
+            function updateSearchPagePos() {
                 searchResPages = [];
                 for (page in searchResult[searchResApps[searchResCurApp]]) {
                     searchResPages.push(page);
                 };
                 searchResCurPage = 0;
                 searchResPages.sort(function(a, b) {return parseInt(a) > parseInt(b)});
+
+                searchResCurOcc = 0;
             };
 
             function getSearchResult(response) {
