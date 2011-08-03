@@ -119,6 +119,7 @@ public interface Storage {
      * in a specified folder and its subfolders.
      * @param path - Array of path segments
      * @param request - String to search
+     * @param pageSize - Size of page for read
      * @return - All occurrences of request represented as HashMap
      * with absolute log file name as key and HashMap with number
      * of chunk of file in which request was found as key
@@ -129,7 +130,7 @@ public interface Storage {
      * as value.)
      * @throws IOException - Throws IOException if has some problems with I/O in the search.
      */
-    Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request) throws IOException;
+    Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request, int pageSize) throws IOException;
 
     /**
      * This method return current length of specified log file.
@@ -144,9 +145,10 @@ public interface Storage {
      * This method reads specified portion of specified file into stream.
      * @param path - Array of path segments
      * @param name - Log file name
-     * @param chunkNumber - Number of needed part of file from the begining
+     * @param startPos - Position in file
+     * @param length - Number of bytes to read
      * @param outputStream - Stream where to write read file
      * @throws IOException - Throws IOException if has some problems with input
      */
-    void getLogNew(String[] path, String name, int chunkNumber, OutputStream outputStream) throws IOException;
+    void getLogNew(String[] path, String name, long startPos, int length, OutputStream outputStream) throws IOException;
 }

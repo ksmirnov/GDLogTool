@@ -2,6 +2,7 @@ package com.griddynamics.logtool;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
+
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
@@ -36,7 +37,6 @@ public class FileStorage implements Storage {
     private Set<String> quotaAlertSubscribers = new HashSet<String>();
     private String alertingEmail;
     private String alertingPassword;
-    private int pageSize;
     private int bufferSize;
     private List<DateTime> dates = new ArrayList<DateTime>();
     private Map<String, FileChannel> openFiles = new HashMap<String, FileChannel>();
@@ -48,11 +48,6 @@ public class FileStorage implements Storage {
     @Required
     public void setBufferSize(int bufferSize) {
         this.bufferSize = bufferSize << 9;
-    }
-
-    @Required
-    public void setPageSize(int pageSize) {
-        this.pageSize = pageSize << 10;
     }
 
     @Required
@@ -184,7 +179,7 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request) throws IOException {
+    public Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request, int pageSize) throws IOException {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String logPath = buildPath(clearPath);
         Searcher searcher = new Searcher(request, pageSize);
@@ -267,7 +262,7 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public synchronized void getLogNew(String[] path, String name, int chunkNumber, OutputStream outputStream) throws IOException {
+    public synchronized void getLogNew(String[] path, String name, long startPos, int length, OutputStream outputStream) throws IOException {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String fileName = addToPath(buildPath(clearPath), name);
         if (!openFiles.containsKey(fileName)) {
@@ -278,22 +273,24 @@ public class FileStorage implements Storage {
         FileChannel fc = openFiles.get(fileName);
         ByteBuffer buf = ByteBuffer.allocate(bufferSize);
 
-        long startPos = chunkNumber * pageSize;
         long fileLen = fc.size();
         int i = 0;
 
-        while (i < pageSize / bufferSize && startPos + (i + 1) * bufferSize < fileLen) {
+
+        while (i < length / bufferSize && startPos + (i + 1) * bufferSize < fileLen) {
             fc.read(buf, startPos + i * bufferSize);
             outputStream.write(buf.array());
+            buf.clear();
             i++;
         }
 
         long curPos = startPos + i * bufferSize;
         long bytesRemainingInFile = fileLen - curPos;
-        int bytesRemainingToRead = pageSize - i * bufferSize;
+        int bytesRemainingToRead = length - i * bufferSize;
         int bytesToRead = bytesRemainingToRead > bytesRemainingInFile ? (int) bytesRemainingInFile : bytesRemainingToRead;
         if (bytesToRead > 0) {
             ByteBuffer buffer = ByteBuffer.allocate(bytesToRead);
+            fc.read(buffer, curPos);
             fc.read(buffer, curPos);
             outputStream.write(buffer.array());
         }
@@ -323,7 +320,7 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public synchronized void deleteDirectory(String ... path) {
+    public synchronized void deleteDirectory(String... path) {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         if (clearPath.length == 0) {
             return;
@@ -352,16 +349,18 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public synchronized Tree getTree(int height, String ... path) {
+    public synchronized Tree getTree(int height, String... path) {
         if (height == -1) {
             return getTree(-1, fileSystem);
         } else if (height == 0) {
             String[] clearPath = removeNullAndEmptyPathSegments(path);
             Tree node = new Tree();
             File folder = new File(buildPath(clearPath));
-            String[] logs = folder.list();
-            for (String log : logs) {
-                node.getChildren().put(log, null);
+            File[] logs = folder.listFiles();
+            for (File log : logs) {
+                if (log.isFile()) {
+                    node.getChildren().put(log.getName(), null);
+                }
             }
             return node;
         } else {
@@ -392,7 +391,7 @@ public class FileStorage implements Storage {
         return node;
     }
 
-    private void addToFileSystem(Tree curNode, String ... path) {
+    private void addToFileSystem(Tree curNode, String... path) {
         if (path.length == 0) {
             return;
         } else if (path.length == 1) {
@@ -426,6 +425,7 @@ public class FileStorage implements Storage {
                 hasOnlyFiles = false;
             } else {
                 addDate(dirs[i].getName());
+                curFolderSize += dirs[i].length();
             }
         }
         if (hasOnlyFiles) {
@@ -441,11 +441,11 @@ public class FileStorage implements Storage {
         }
     }
 
-    private String[] getUpPath(String ... path) {
+    private String[] getUpPath(String... path) {
         return Arrays.copyOf(path, path.length - 1);
     }
 
-    private String[] getSubPath(String ... path) {
+    private String[] getSubPath(String... path) {
         return Arrays.copyOfRange(path, 1, path.length);
     }
 
@@ -473,7 +473,7 @@ public class FileStorage implements Storage {
             deleteLog(path, "default.log");
         }
         if (needToWipeRec() && log.exists()) {
-           deleteLog(path, fileName);
+            deleteLog(path, fileName);
         }
         if (needToWipeRec()) {
             File folder = new File(curPath);
@@ -505,7 +505,7 @@ public class FileStorage implements Storage {
             long res = 0;
             String[] files = dir.list();
             for (String file : files) {
-                res += measureSize(addToPath(path,file));
+                res += measureSize(addToPath(path, file));
             }
             return res;
         } else {
@@ -525,7 +525,7 @@ public class FileStorage implements Storage {
         return dir.delete();
     }
 
-    private String buildPath(String ... path) {
+    private String buildPath(String... path) {
         StringBuffer result = new StringBuffer(logFolder);
         for (int i = 0; i < path.length; i++) {
             result.append(File.separator).append(path[i]);
