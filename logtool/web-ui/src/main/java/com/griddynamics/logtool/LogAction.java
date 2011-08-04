@@ -8,12 +8,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static com.griddynamics.logtool.PathConstructor.getPath;
 
 public class LogAction extends Action {
     public void perform(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-
         getLog(req.getParameter("path"),
                 Integer.parseInt(req.getParameter("partToView")),
                 Integer.parseInt(req.getParameter("lines")), resp.getOutputStream());

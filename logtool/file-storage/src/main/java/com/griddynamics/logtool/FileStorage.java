@@ -183,7 +183,7 @@ public class FileStorage implements Storage {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String logPath = buildPath(clearPath);
         Searcher searcher = new Searcher(request, pageSize);
-        return searcher.doSearch(logPath);
+        return searcher.doSearchNew(logPath);
     }
 
     @Override
@@ -304,6 +304,17 @@ public class FileStorage implements Storage {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String logPath = buildPath(clearPath);
         String logAbsolutePath = addToPath(logPath, name);
+
+        if (openFiles.containsKey(logAbsolutePath)) {
+            try {
+                openFiles.get(logAbsolutePath).close();
+                openFiles.remove(logAbsolutePath);
+            } catch (IOException ex) {
+                logger.error("Couldn't close log file: " + logAbsolutePath);
+                return;
+            }
+        }
+
         File log = new File(logAbsolutePath);
         long logSize = log.length();
         curFolderSize -= logSize;
@@ -326,6 +337,18 @@ public class FileStorage implements Storage {
             return;
         }
         String logPath = buildPath(clearPath);
+
+        for (String log : openFiles.keySet()) {
+            if (log.indexOf(logPath) == 0) {
+                try {
+                    openFiles.get(log).close();
+                    openFiles.remove(log);
+                } catch (IOException ex) {
+                    logger.error("Couldn't close log file: " + log);
+                }
+            }
+        }
+
         long logDirSize = measureSize(logPath);
 
         File log = new File(logPath);
@@ -526,11 +549,15 @@ public class FileStorage implements Storage {
     }
 
     private String buildPath(String... path) {
-        StringBuffer result = new StringBuffer(logFolder);
+        StringBuffer result = new StringBuffer();
         for (int i = 0; i < path.length; i++) {
             result.append(File.separator).append(path[i]);
         }
-        return result.toString();
+        if (!result.toString().contains(logFolder)) {
+            return new StringBuffer(logFolder).append(result.toString()).toString();
+        } else {
+            return result.toString();
+        }
     }
 
     private String addToPath(String path, String subPath) {

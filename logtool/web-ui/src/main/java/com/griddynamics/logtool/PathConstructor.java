@@ -13,5 +13,4 @@ public class PathConstructor {
         }
         return pathList;
     }
-
 }

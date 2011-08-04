@@ -65,9 +65,12 @@ public class FileStorageTest {
     public void newGetTest() throws IOException {
         fileStorage.addMessage(path1, logDate1, logMsg);
         fileStorage.addMessage(path1, logDate1, logMsg);
+        for (int i=0;i<1000;i++) {
+            fileStorage.addMessage(path1, logDate1, logMsg + i);
+        }
 
         FileOutputStream fos = new FileOutputStream("test");
-        fileStorage.getLogNew(path1, logName1, 0, 4024, fos);
+        fileStorage.getLogNew(path1, logName1, 0, 2000, fos);
         fos.flush();
         fos.close();
         String expectedLine = logMsg;
@@ -75,8 +78,6 @@ public class FileStorageTest {
         assertEquals(expectedLine, reader.readLine());
         assertEquals(expectedLine, reader.readLine());
         reader.close();
-        File f = new File("test");
-        f.delete();
         fileStorage.deleteDirectory(path1);
     }
 
@@ -248,18 +249,6 @@ public class FileStorageTest {
         expected.put(fileName1, new HashMap<Integer, List<Integer>>());
         expected.put(fileName2, new HashMap<Integer, List<Integer>>());
 
-//        expected.get(fileName1).put(0, new ArrayList<Integer>());
-//        expected.get(fileName2).put(0, new ArrayList<Integer>());
-//
-//        int first = "03:09:53 String for testest search".indexOf("test");
-//        int second = "03:09:53 String for testest search".indexOf("test", first + 1);
-//
-//        expected.get(fileName1).get(0).add(first);
-//        expected.get(fileName1).get(0).add(second);
-//
-//        expected.get(fileName2).get(0).add(first);
-//        expected.get(fileName2).get(0).add(second);
-
         expected.get(fileName1).put(1, new ArrayList<Integer>());
         expected.get(fileName2).put(1, new ArrayList<Integer>());
 
@@ -271,6 +260,18 @@ public class FileStorageTest {
 
         expected.get(fileName2).get(1).add(first);
         expected.get(fileName2).get(1).add(second);
+
+//        expected.get(fileName1).put(1, new ArrayList<Integer>());
+//        expected.get(fileName2).put(1, new ArrayList<Integer>());
+//
+//        int first = "String for testest search".indexOf("test");
+//        int second = "String for testest search".indexOf("test", first + 1);
+//
+//        expected.get(fileName1).get(1).add(first);
+//        expected.get(fileName1).get(1).add(second);
+//
+//        expected.get(fileName2).get(1).add(first);
+//        expected.get(fileName2).get(1).add(second);
 
         assertEquals(expected, res);
     }
