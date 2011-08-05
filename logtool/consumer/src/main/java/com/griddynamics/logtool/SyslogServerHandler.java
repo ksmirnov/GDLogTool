@@ -11,15 +11,19 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.net.InetSocketAddress;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 
 public class SyslogServerHandler extends SimpleChannelHandler {
     private static final Logger logger = LoggerFactory.getLogger(ConsumerHandler.class);
 
     private final Storage storage;
+    private final SearchServer searchServer;
 
-    public SyslogServerHandler(Storage storage) {
+    public SyslogServerHandler(Storage storage, SearchServer searchServer) {
         this.storage = storage;
+        this.searchServer = searchServer;
     }
 
     /**
@@ -40,11 +44,14 @@ public class SyslogServerHandler extends SimpleChannelHandler {
             receivedMessage.append((char) buf.readByte());
         }
         ParsedMessage msg = MessageParser.parseMessage(receivedMessage.toString());
-        String [] path = new String [3];
-        path[0] = msg.getApplication();
-        path[1] = host;
-        path[2] = msg.getInstance();;
-        storage.addMessage(path, msg.getTimestamp(), msg.getMessage());
+        Map<String, String> doc = new LinkedHashMap<String, String>();
+        doc.put("application", msg.getApplication());
+        doc.put("host", host);
+        doc.put("instance", msg.getInstance());
+        String [] path = new String[doc.size()];
+        doc.values().toArray(path);
+        doc.putAll(storage.addMessage(path, msg.getTimestamp(), msg.getMessage()));
+        searchServer.index(doc);
     }
 
     /**

@@ -16,7 +16,7 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 
 import java.net.InetSocketAddress;
-import java.util.StringTokenizer;
+import java.util.*;
 
 public class ConsumerHandler extends SimpleChannelHandler {
     private static final Logger logger = LoggerFactory.getLogger(ConsumerHandler.class);
@@ -26,9 +26,11 @@ public class ConsumerHandler extends SimpleChannelHandler {
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
     private final DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("HH:mm:ss");
     private final Storage storage;
+    private final SearchServer searchServer;
 
-    public ConsumerHandler(Storage storage) {
+    public ConsumerHandler(Storage storage, SearchServer searchServer) {
         this.storage = storage;
+        this.searchServer = searchServer;
     }
 
     /**
@@ -48,11 +50,14 @@ public class ConsumerHandler extends SimpleChannelHandler {
             String message = timeFormatter.print(loggingEvent.timeStamp) + " " + loggingEvent.getMessage().toString();
             DateTime date = new DateTime(loggingEvent.timeStamp);
             String timestamp = date.toString(dateTimeFormatter);
-            String[] entry = new String[3];
-            entry[0] = getApplication(loggingEvent);
-            entry[1] = host;
-            entry[2] = getInstance(loggingEvent);
-            storage.addMessage(entry, timestamp, message);
+            Map<String, String> doc = new LinkedHashMap<String, String>();
+            doc.put("application", getApplication(loggingEvent));
+            doc.put("host", host);
+            doc.put("instance", getInstance(loggingEvent));
+            String[] path = new String[doc.size()];
+            doc.values().toArray(path);
+            doc.putAll(storage.addMessage(path, timestamp, message));
+            searchServer.index(doc);
         } else {
             throw new IllegalArgumentException("argument is not instance of LoggingEvent");
         }

@@ -32,6 +32,8 @@
         <commonsEmailVersion>1.2</commonsEmailVersion>
         <commonsLangVersion>2.6</commonsLangVersion>
         <servletApiVersion>2.5</servletApiVersion>
+        <solrCoreVersion>3.3.0</solrCoreVersion>
+        <solrjVersion>3.3.0</solrjVersion>
     </properties>
 
     <dependencyManagement>
@@ -61,6 +63,11 @@
                 <artifactId>filetailer</artifactId>
                 <version>${projectVersion}</version>
             </dependency>
+            <dependency>
+                <groupId>com.griddynamics.logtool</groupId>
+                <artifactId>search-server</artifactId>
+                <version>${projectVersion}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -72,7 +79,7 @@
                 <artifactId>spring-context</artifactId>
                 <version>${springVersion}</version>
             </dependency>
-	    <dependency>
+	        <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-web</artifactId>
                 <version>${springVersion}</version>
@@ -131,6 +138,16 @@
             </dependency>
 
             <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-core</artifactId>
+                <version>${solrCoreVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-solrj</artifactId>
+                <version>${solrjVersion}</version>
+            </dependency>
+            <dependency>
                 <groupId>javax.servlet</groupId>
                 <artifactId>servlet-api</artifactId>
                 <version>${servletApiVersion}</version>
@@ -143,7 +160,8 @@
         <module>storage-api</module>
         <module>file-storage</module>
         <module>web-ui</module>
-	<module>filetailer</module>
+	    <module>filetailer</module>
+        <module>search-server</module>
     </modules>
 
     <build>

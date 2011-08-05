@@ -19,6 +19,7 @@ public class Consumer {
     private int log4jPort = 4444;
     private int syslogPort = 4445;
     private Storage storage;
+    private SearchServer searchServer;
 
     public void setLog4jPort(int log4jPort) {
         this.log4jPort = log4jPort;
@@ -32,11 +33,15 @@ public class Consumer {
         this.storage = storage;
     }
 
+    public void setSearchServer(SearchServer searchServer) {
+        this.searchServer = searchServer;
+    }
+
     public void startLog4j() {
         Executor threadPool = Executors.newCachedThreadPool();
         ChannelFactory factory = new NioServerSocketChannelFactory(threadPool, threadPool);
         ServerBootstrap bootstrap = new ServerBootstrap(factory);
-        final ConsumerHandler consumerHandler = new ConsumerHandler(storage);
+        final ConsumerHandler consumerHandler = new ConsumerHandler(storage, searchServer);
 
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
@@ -59,7 +64,7 @@ public class Consumer {
 
         syslogServerBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
-                return Channels.pipeline(new SyslogServerHandler(storage));
+                return Channels.pipeline(new SyslogServerHandler(storage, searchServer));
             }
         });
         syslogServerBootstrap.setOption("child.keepAlive", true);

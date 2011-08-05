@@ -17,8 +17,9 @@ public interface Storage {
      * @param path - Array of path segments
      * @param timestamp - Time of log message
      * @param message - Log message
+     * @return - Collection containing information about stored message
      */
-    void addMessage(String[] path, String timestamp, String message);
+    Map<String, String> addMessage(String[] path, String timestamp, String message);
 
     /**
      * This method reads text of appropriate log file and returns it as List<String>

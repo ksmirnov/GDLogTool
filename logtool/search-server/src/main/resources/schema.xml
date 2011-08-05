@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+
+<schema name="logtool field schema">
+    <types>
+        <fieldtype name="string"  class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+    </types>
+
+    <fields>
+        <field name="path"        type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
+        <field name="startIndex"  type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
+        <field name="length"      type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
+        <field name="host"        type="string"   indexed="true"  stored="true"  multiValued="false" />
+        <field name="application" type="string"   indexed="true"  stored="true"  multiValued="false" />
+        <field name="instance"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+        <field name="level"       type="string"   indexed="true"  stored="true"  multiValued="false" />
+        <field name="date"        type="string"   indexed="true"  stored="true"  multiValued="false" />
+        <field name="time"        type="string"   indexed="true"  stored="true"  multiValued="false" />
+        <field name="port"        type="string"   indexed="true"  stored="true"  multiValued="false" />
+    </fields>
+
+    <solrQueryParser defaultOperator="AND"/>
+
+</schema>
+

@@ -39,6 +39,10 @@
             <artifactId>file-storage</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.griddynamics.logtool</groupId>
+            <artifactId>search-server</artifactId>
+        </dependency>
+        <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
         </dependency>

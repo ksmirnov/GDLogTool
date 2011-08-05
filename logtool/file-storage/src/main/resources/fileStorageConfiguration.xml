@@ -5,6 +5,7 @@
 
     <bean id="fileStorageConfigurator" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations" value="classpath:fileStorage.properties" />
+        <property name="ignoreUnresolvablePlaceholders" value="true" />
     </bean>
 
     <bean id="fileStorage" class="com.griddynamics.logtool.FileStorage" init-method="createTreeFromDisk">
