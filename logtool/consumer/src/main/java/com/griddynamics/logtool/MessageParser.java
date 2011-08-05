@@ -15,7 +15,7 @@ public class MessageParser {
     private static final String appInst = "([a-zA-Z0-9]+)";
     private static final Pattern parsePattern = Pattern.compile("[^|]*" + delimiter + appInst +
             delimiter + appInst + delimiter +
-            "(" + "(?:.+" + delimiter + ")?(" + AnyDate + " ?" + ABSOLUTE + ")[ ]*[|][ ]*.+)[\\n]?");
+            "(" + "(?:.+" + delimiter + ")?(" + AnyDate + " ?" + ABSOLUTE + ")[ ]*[|][ ]*.+)[\\n]?",Pattern.DOTALL);
     private static final Pattern ISO8601DatePattern = Pattern.compile("(" + ISO8601Date+ ") " + ABSOLUTE);
     private static final Pattern DATEDatePattern = Pattern.compile("(" + DATEDate+ ") " + ABSOLUTE);
 

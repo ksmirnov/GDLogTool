@@ -518,68 +518,78 @@ Ext.onReady(function() {
         }
     });
 
-    function writeText(pathToLog) {
-        var prevViewed = partViewed;
-        if (pathToLog == 'prev') {
-            pathToLog = selectedFilePath;
-            if (partViewed >= lineForPage) {
-                partViewed = partViewed - lineForPage;
-                lastPage = false;
-            } else {
-                partViewed = 0;
-            }
-        }
-        if (pathToLog == 'next') {
-            pathToLog = selectedFilePath;
-            partViewed = partViewed + lineForPage;
-        }
+	function writeText(pathToLog) {
+		var prevViewed = partViewed;
+		if (pathToLog == 'prev') {
+			pathToLog = selectedFilePath;
+			if (partViewed >= lineForPage) {
+				partViewed = partViewed - lineForPage;
+				lastPage = false;
+			} else {
+				partViewed = 0;
+			}
+		}
+		if (pathToLog == 'next') {
+			pathToLog = selectedFilePath;
+			partViewed = partViewed + lineForPage;
+		}
 
-        Ext.Ajax.request({
-            url : loc + '/logtool',
-            params : {
-                action : 'getlog',
-                path : pathToLog,
-                partToView : partViewed,
-                lines : lineForPage
-            },
-            method : 'GET',
-            success : function(result, request) {
-                var res = replaceStringDelimiter(result.responseText);
-                eval(res);
-                var countLogs = parseInt(response.total);
-                partViewed = parseInt(response.partViewed);
-                if (partViewed >= countLogs - lineForPage) {
-                    lastPage = true;
-                }
-                document.getElementById('div2').innerHTML =
-                                (' Page viewed ' + parseInt(Math.ceil(partViewed / lineForPage)) +
-                                ' from ' + parseInt(Math.floor(countLogs / lineForPage)) +
-                                '<br>' + response.log);
-
-            },
-            failure : function(result, request) {
-                Ext.MessageBox.alert('Failed', result.responseText);
-            }
-        });
-    };
-    
-    function replaceStringDelimiter(text) {
-        var pattern = /\r\n|\r|\n/g;
-        var new_text = text.replace(pattern, "<br>");
-        return new_text;
+		Ext.Ajax.request({
+			url : loc + '/logtool',
+			params : {
+				action : 'getlog',
+				path : pathToLog,
+				partToView : partViewed,
+				lines : lineForPage
+			},
+			method : 'GET',
+			success : function(result, request) {
+				var res = replaceStringDelimetr(result.responseText);
+				eval(res);
+				var countLogs = parseInt(response.total);
+				partViewed = parseInt(response.partViewed);
+				if (partViewed >= countLogs - lineForPage)
+					{
+					lastPage = true;
+					}
+				document.getElementById('div2').innerHTML =
+		                        (' Page viewed ' + parseInt(Math.ceil(partViewed/lineForPage)) +
+		                        ' from ' + parseInt(Math.floor(countLogs/
+		                        lineForPage)) + '<br>' + response.log);
+			},
+			failure : function(result, request) {
+				Ext.MessageBox.alert('Failed', result.responseText);
+			}
+		});
+	};
+	function getLogInJsonIndex(text){
+        var ind=0;
+        for(var i = 0; i < 11;i++ ){
+            ind = text.indexOf("'",ind) +1;
+        }
+        return ind;
     }
-    
-//    var updateLog = function update() {
-//        if (lastPage == true) {
-//            partViewed = -1;
-//            writeText(selectedFilePath);
-//        } else if (selectedFilePath != "") {
-//            writeText(selectedFilePath);
-//        }
-//    }
-//
-//    Ext.TaskManager.start({
-//        run: updateLog,
-//        interval: 5000
-//    });
+	function replaceStringDelimetr(text) {
+		var pattern = /\r\n|\r|\n/g;
+		text = text.replace(pattern, "<br>");
+		var firstIndexOfLog = getLogInJsonIndex(text);
+		var headerText = text.substring(0, firstIndexOfLog);
+		var log = text.substring(firstIndexOfLog, text.length -2);
+        log = log.replace(/'/g," ");
+        log = log.replace(/{/g, "[");
+        log = log.replace(/}/g, "]");
+		return(headerText + log + "'}");
+	}
+	var updateLog = function update() {
+		if(lastPage == true){
+			partViewed = -1;
+			writeText(selectedFilePath);
+		}else if(selectedFilePath != ""){
+			writeText(selectedFilePath);
+		}
+	}
+	Ext.TaskManager.start({
+		run: updateLog,
+		interval: 5000
+	});
 });
