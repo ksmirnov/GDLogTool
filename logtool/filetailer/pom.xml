@@ -9,5 +9,11 @@
     </parent>
 
     <artifactId>filetailer</artifactId>
+        <dependencies>
+        <dependency>
+            <groupId>com.griddynamics.logtool</groupId>
+            <artifactId>udp-sendler</artifactId>
+        </dependency>
+        </dependencies>
     
 </project>
