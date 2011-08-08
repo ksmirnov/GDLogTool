@@ -5,6 +5,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Set;
 
 import static com.griddynamics.logtool.PathConstructor.getPath;
 
@@ -17,6 +18,9 @@ public class DeleteDirectoryAction extends Action {
     }
 
     public void deleteDirectory(String pathString) {
-        storage.deleteDirectory(getPath(pathString).toArray(new String[0]));
+        Set<String> files = storage.deleteDirectory(getPath(pathString).toArray(new String[0]));
+        for(String file: files) {
+            searchServer.delete("path:" + file);
+        }
     }
 }

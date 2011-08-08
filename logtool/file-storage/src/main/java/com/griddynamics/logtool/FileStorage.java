@@ -303,9 +303,9 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public synchronized void deleteLog(String[] path, String name) {
+    public synchronized String deleteLog(String[] path, String name) {
         if (isBlank(name)) {
-            return;
+            return null;
         }
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String logPath = buildPath(clearPath);
@@ -317,7 +317,7 @@ public class FileStorage implements Storage {
                 openFiles.remove(logAbsolutePath);
             } catch (IOException ex) {
                 logger.error("Couldn't close log file: " + logAbsolutePath);
-                return;
+                return null;
             }
         }
 
@@ -334,13 +334,15 @@ public class FileStorage implements Storage {
         }
 
         lastUpdateTime = System.currentTimeMillis();
+        return logAbsolutePath;
     }
 
     @Override
-    public synchronized void deleteDirectory(String... path) {
+    public synchronized Set<String> deleteDirectory(String... path) {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
+        Set<String> out = new HashSet<String>();
         if (clearPath.length == 0) {
-            return;
+            return null;
         }
         String logPath = buildPath(clearPath);
 
@@ -349,6 +351,7 @@ public class FileStorage implements Storage {
                 try {
                     openFiles.get(log).close();
                     openFiles.remove(log);
+                    out.add(log);
                 } catch (IOException ex) {
                     logger.error("Couldn't close log file: " + log);
                 }
@@ -375,6 +378,7 @@ public class FileStorage implements Storage {
         if (log.list().length == 0) {
             deleteDirectory(upPath);
         }
+        return out;
     }
 
     @Override

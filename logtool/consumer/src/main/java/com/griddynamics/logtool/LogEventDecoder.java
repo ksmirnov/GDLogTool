@@ -50,12 +50,16 @@ public class LogEventDecoder extends FrameDecoder {
             logger.trace("Unable to read object, end of stream reached");
             bufferStream.setReaderIndex(0);
         } catch (StreamCorruptedException e) {
-            if(buffer.readInt() == HEADER) {
-                logger.trace("Header has sent repeatedly");
-                bufferStream.setReaderIndex(0);
-                bufferStream.setMark(4);
+            if(buffer.readableBytes() >= 4) {
+                if(buffer.readInt() == HEADER) {
+                    logger.trace("Header has sent repeatedly");
+                    bufferStream.setReaderIndex(0);
+                    bufferStream.setMark(4);
+                } else {
+                    throw e;
+                }
             } else {
-                throw e;
+                bufferStream.setReaderIndex(0);
             }
         } finally {
             ois.close();
