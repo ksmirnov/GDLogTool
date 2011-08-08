@@ -2,7 +2,7 @@ package com.griddynamics.logtool;
 
 public class ActionFactory {
 
-    public Action create(String actionName,Storage storage) {
+    public Action create(String actionName, Storage storage, SearchServer searchServer) {
         if (actionName.equalsIgnoreCase("getTree")) {
             TreeAction ta = new TreeAction();
             ta.setStorage(storage);
@@ -14,10 +14,12 @@ public class ActionFactory {
         } else if (actionName.equalsIgnoreCase("deleteLog")) {
             DeleteLogAction dla = new DeleteLogAction();
             dla.setStorage(storage);
+            dla.setSearchServer(searchServer);
             return dla;
         } else if (actionName.equalsIgnoreCase("deleteDirectory")) {
             DeleteDirectoryAction dda = new DeleteDirectoryAction();
             dda.setStorage(storage);
+            dda.setSearchServer(searchServer);
             return dda;
         } else if (actionName.equalsIgnoreCase("alertsAction")) {
             AlertsAction aa = new AlertsAction();

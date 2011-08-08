@@ -20,6 +20,6 @@ public class DeleteLogAction extends Action {
         List<String> pathList = getPath(pathString);
         String logName =  pathList.get(pathList.size() - 1);
         pathList.remove(pathList.size() - 1);
-        storage.deleteLog(pathList.toArray(new String[0]), logName);
+        searchServer.delete("path:" + storage.deleteLog(pathList.toArray(new String[0]), logName));
     }
 }

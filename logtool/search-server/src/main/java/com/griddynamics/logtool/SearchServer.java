@@ -17,7 +17,7 @@ public interface SearchServer {
     /**
      * Retrieves entries from search server by some query
      * @param query - query to retrieve data, depends on search server query syntax
-     * @return - List of found entries Map<String, String>
+     * @return - List of found entries Map<String, String> (empty if nothing found)
      */
     List<Map<String, String>> search(String query);
 

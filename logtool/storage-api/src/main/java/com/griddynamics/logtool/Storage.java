@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Storage interface provides to Consumer possibility to add log message to
@@ -33,14 +34,16 @@ public interface Storage {
      * This method deletes appropriate log file.
      * @param path - Array of path segments
      * @param name - Log file name
+     * @return - Deleted file name
      */
-    void deleteLog(String[] path, String name);
+    String deleteLog(String[] path, String name);
 
     /**
      * This method deletes appropriate log folder.
      * @param path - Array of path segments
+     * @return - Collection of deleted files names
      */
-    void deleteDirectory(String path[]);
+    Set<String> deleteDirectory(String path[]);
 
     /**
      * This method returns storage structure for servlet's UI.
