@@ -62,6 +62,7 @@ public class SearchServerImpl implements SearchServer {
     @Override
     public List<Map<String, String>> search(String query) {
         SolrQuery solrQuery = new SolrQuery(query);
+        solrQuery.setRows(Integer.MAX_VALUE);
         QueryResponse resp;
         try {
             resp = server.query(solrQuery);
@@ -71,12 +72,14 @@ public class SearchServerImpl implements SearchServer {
         }
         SolrDocumentList docs = resp.getResults();
         List out = new ArrayList();
-        for(SolrDocument doc : docs) {
-            Map<String, String> entry = new HashMap<String, String>();
-            for(String name : doc.getFieldNames()) {
-                entry.put(name, (String) doc.getFieldValue(name));
+        if(docs != null) {
+            for(SolrDocument doc : docs) {
+                Map<String, String> entry = new HashMap<String, String>();
+                for(String name : doc.getFieldNames()) {
+                    entry.put(name, (String) doc.getFieldValue(name));
+                }
+                out.add(entry);
             }
-            out.add(entry);
         }
         return out;
     }
@@ -85,6 +88,7 @@ public class SearchServerImpl implements SearchServer {
     public void delete(String query) {
         try {
             server.deleteByQuery(query);
+            server.commit();
         } catch (Exception e) {
             logger.error("Delete query failed", e);
         }

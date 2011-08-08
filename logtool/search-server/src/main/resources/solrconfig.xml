@@ -3,6 +3,8 @@
 <config>
     <luceneMatchVersion>LUCENE_33</luceneMatchVersion>
 
+    <lockType>simple</lockType>
+
     <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
 
     <updateHandler class="solr.DirectUpdateHandler2" />
