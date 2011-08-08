@@ -150,7 +150,7 @@ class WatchingSsh implements Runnable {
                     while (r != -1) {
                         if ((char) r != '\n') {
                             sb.append((char) r);
-                        } else if (sb.toString().length() > 1) {
+                        } else if (sb.toString().length() > 0) {
                             if (!checkStringForHeader(sb.toString())) {
                                 sendler.sendMsg(convertToConsumerFormat(sb.toString()));
                             }
@@ -159,7 +159,6 @@ class WatchingSsh implements Runnable {
                         r = is.read();
                     }
                     cmd.join(5, TimeUnit.SECONDS);
-                    System.out.println("\n** exit status: " + cmd.getExitStatus());
                 } finally {
                     session.close();
                 }
