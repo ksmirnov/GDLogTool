@@ -1,4 +1,5 @@
 package com.griddynamics.logtool;
+
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

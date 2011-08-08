@@ -9,6 +9,7 @@ Ext.onReady(function() {
     var loc = location.href;
     loc = loc.substring(0, loc.lastIndexOf('/'));
 
+    var searchRunning = false;
     var searchResult;
     var pos;
     var searchRequestLength;
@@ -91,6 +92,7 @@ Ext.onReady(function() {
                             itemclick : function(view, record, item,
                                     index, e) {
                                 if (record.isLeaf()) {
+                                    searchRunning = false;
                                     selectedFilePath = getFilePath(record);
                                     partViewed = -1;
                                     writeText(selectedFilePath);
@@ -221,6 +223,7 @@ Ext.onReady(function() {
                         handler: function() {
                             searchWindow.close();
                             clearDiv();
+                            searchRunning = false;
                             var searchResApps = [];
                             var searchResPages = [];
                             searchField = new Ext.form.TextField({
@@ -236,6 +239,7 @@ Ext.onReady(function() {
 
             function doSearch() {
                 clearDiv();
+                searchRunning = true;
                 var selModel = treePanel.getSelectionModel();
                 var selNodes = selModel.getSelection();
                 if (selNodes.length > 0) {
@@ -307,7 +311,6 @@ Ext.onReady(function() {
                             if (searchResCurApp + 1 != searchResApps.length) {
                                 searchResCurApp++;
                                 updateSearchPagePos('next');
-                                //searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
                                 printNewPage();
                             }
                         } else {
@@ -331,7 +334,6 @@ Ext.onReady(function() {
                             if (searchResCurApp - 1 >= 0) {
                                 searchResCurApp--;
                                 updateSearchPagePos('prev');
-                                //searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
                                 printNewPage();
                             }
                         } else {
@@ -363,9 +365,17 @@ Ext.onReady(function() {
 
             function clearDiv() {
                 document.getElementById('div2').innerHTML = '';
+                selectedFilePath = "";
+                lastPage = false;
             };
 
             function printCurPage() {
+                if (searchViewCurPage != parseInt(searchResPages[searchResCurPage])) {
+                    searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
+                    printNewPage();
+                    return;
+                }
+
                 var res = document.getElementById('div2').innerHTML;
                 res = res.replace(/<font style="BACKGROUND-COLOR: yellow">/g, '');
                 res = res.replace(/<\/font>/g, '');
@@ -386,7 +396,8 @@ Ext.onReady(function() {
                     searchBytesToLightFromPrevPage = searchRequestLength - (curLen - index) + 1;
                     searchPageToLightFirstBytes = searchViewCurPage + 1;
                 }
-                actualPart = replaceStringDelimiter(actualPart);
+
+                actualPart = replaceStringDelimiters(actualPart);
 
                 document.getElementById('div2').innerHTML = res.substring(0, offset) + actualPart;
             };
@@ -402,7 +413,7 @@ Ext.onReady(function() {
                     },
                     method: 'GET',
                     success: function (result, request) {
-                        var resp = replaceStringDelimiter(result.responseText);
+                        var resp = replaceStringDelimiters(result.responseText);
                         eval(resp);
                         var res = response.log.replace(/<br>/g, "\n");
                         var totalLength = parseInt(response.total);
@@ -428,7 +439,7 @@ Ext.onReady(function() {
                         } else {
                             res = lightFirstBytes(res);
                         }
-                        res = replaceStringDelimiter(res);
+                        res = replaceStringDelimiters(res);
                         res = searchResApps[searchResCurApp] + '<br>Page viewed '
                                 + searchViewCurPage + ' from ' + totalPages + '<br>' + res;
 
@@ -512,84 +523,93 @@ Ext.onReady(function() {
                 pos = index + 1;
                 return obj;
             };
+
+            function replaceStringDelimiters(text) {
+                var pattern = /\r\n|\r|\n/g;
+                var new_text = text.replace(pattern, "<br>");
+                return new_text;
+            };
         },
         failure : function(result, request) {
             Ext.MessageBox.alert('Failed', result.responseText);
         }
     });
 
-	function writeText(pathToLog) {
-		var prevViewed = partViewed;
-		if (pathToLog == 'prev') {
-			pathToLog = selectedFilePath;
-			if (partViewed >= lineForPage) {
-				partViewed = partViewed - lineForPage;
-				lastPage = false;
-			} else {
-				partViewed = 0;
-			}
-		}
-		if (pathToLog == 'next') {
-			pathToLog = selectedFilePath;
-			partViewed = partViewed + lineForPage;
-		}
+    function writeText(pathToLog) {
+        var prevViewed = partViewed;
+        if (pathToLog == 'prev') {
+            pathToLog = selectedFilePath;
+            if (partViewed >= lineForPage) {
+                partViewed = partViewed - lineForPage;
+                lastPage = false;
+            } else {
+                partViewed = 0;
+            }
+        }
+        if (pathToLog == 'next') {
+            pathToLog = selectedFilePath;
+            partViewed = partViewed + lineForPage;
+        }
 
-		Ext.Ajax.request({
-			url : loc + '/logtool',
-			params : {
-				action : 'getlog',
-				path : pathToLog,
-				partToView : partViewed,
-				lines : lineForPage
-			},
-			method : 'GET',
-			success : function(result, request) {
-				var res = replaceStringDelimetr(result.responseText);
-				eval(res);
-				var countLogs = parseInt(response.total);
-				partViewed = parseInt(response.partViewed);
-				if (partViewed >= countLogs - lineForPage)
-					{
-					lastPage = true;
-					}
-				document.getElementById('div2').innerHTML =
-		                        (' Page viewed ' + parseInt(Math.ceil(partViewed/lineForPage)) +
-		                        ' from ' + parseInt(Math.floor(countLogs/
-		                        lineForPage)) + '<br>' + response.log);
-			},
-			failure : function(result, request) {
-				Ext.MessageBox.alert('Failed', result.responseText);
-			}
-		});
-	};
-	function getLogInJsonIndex(text){
+        Ext.Ajax.request({
+            url : loc + '/logtool',
+            params : {
+                action : 'getlog',
+                path : pathToLog,
+                partToView : partViewed,
+                lines : lineForPage
+            },
+            method : 'GET',
+            success : function(result, request) {
+                var res = replaceStringDelimetr(result.responseText);
+                eval(res);
+                var countLogs = parseInt(response.total);
+                partViewed = parseInt(response.partViewed);
+                if (partViewed >= countLogs - lineForPage)
+                    {
+                    lastPage = true;
+                    }
+                document.getElementById('div2').innerHTML =
+                                (' Page viewed ' + parseInt(Math.ceil(partViewed/lineForPage)) +
+                                ' from ' + parseInt(Math.floor(countLogs/
+                                lineForPage)) + '<br>' + response.log);
+            },
+            failure : function(result, request) {
+                Ext.MessageBox.alert('Failed', result.responseText);
+            }
+        });
+    };
+    function getLogInJsonIndex(text){
         var ind=0;
         for(var i = 0; i < 11;i++ ){
             ind = text.indexOf("'",ind) +1;
         }
         return ind;
     }
-	function replaceStringDelimetr(text) {
-		var pattern = /\r\n|\r|\n/g;
-		text = text.replace(pattern, "<br>");
-		var firstIndexOfLog = getLogInJsonIndex(text);
-		var headerText = text.substring(0, firstIndexOfLog);
-		var log = text.substring(firstIndexOfLog, text.length -2);
+    function replaceStringDelimetr(text) {
+        var pattern = /\r\n|\r|\n/g;
+        text = text.replace(pattern, "<br>");
+        var firstIndexOfLog = getLogInJsonIndex(text);
+        var headerText = text.substring(0, firstIndexOfLog);
+        var log = text.substring(firstIndexOfLog, text.length -2);
         log = log.replace(/'/g," ");
         log = log.replace(/{/g, "[");
         log = log.replace(/}/g, "]");
-		return(headerText + log + "'}");
-	}
-	var updateLog = function update() {
-		if(lastPage == true){
-			partViewed = -1;
-			writeText(selectedFilePath);
-		}else if(selectedFilePath != ""){
-			writeText(selectedFilePath);
-		}
-	}
-	Ext.TaskManager.start({
-		run: updateLog,
-		interval: 5000
-	});
+        return(headerText + log + "'}");
+    }
+    var updateLog = function update() {
+       if (!searchRunning) {
+            if (lastPage == true){
+                partViewed = -1;
+                writeText(selectedFilePath);
+            } else if (selectedFilePath != "") {
+                writeText(selectedFilePath);
+            }
+        }
+    }
+
+    Ext.TaskManager.start({
+        run: updateLog,
+        interval: 5000
+    });
 });

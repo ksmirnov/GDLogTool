@@ -23,6 +23,51 @@ public class Searcher {
         this.actualPageSize = pageSize + request.length() - 1;
     }
 
+    public Map<String, Map<Integer, List<Integer>>> doSolrSearch(List<Map<String, String>> solrSearchResult) throws IOException {
+        for (Map<String, String> app : solrSearchResult) {
+            String path = app.get("path");
+            RandomAccessFile rafLog = new RandomAccessFile(path, "r");
+
+            long startPos = Long.parseLong(app.get("startIndex"));
+            long length = Long.parseLong(app.get("length"));
+            long parts = length / pageSize;
+            byte[] buf = new byte[actualPageSize];
+
+            StringBuffer sb = new StringBuffer(path);
+            sb = sb.append(" ").append(startPos).append(" ").append(length);
+
+            for (int i = 1; i < parts + 1; i++) {
+                long curPos = startPos + (i - 1) * pageSize;
+                rafLog.seek(curPos);
+                String chunk = null;
+                int bytesRead = rafLog.read(buf);
+                if (bytesRead == actualPageSize) {
+                    chunk = new String(buf);
+                } else {
+                    byte[] buff = new byte[bytesRead];
+                    rafLog.seek(curPos);
+                    rafLog.read(buff);
+                    chunk = new String(buff);
+                }
+                inStringSearch(chunk, i, actualPageSize, sb.toString());
+            }
+
+            long remainingBytes = length - parts * pageSize;
+            if (remainingBytes > 0) {
+                long curPos = startPos + parts * pageSize;
+                rafLog.seek(curPos);
+                String chunk = null;
+                byte[] buff = new byte[(int) remainingBytes];
+                rafLog.seek(curPos);
+                rafLog.read(buff);
+                chunk = new String(buff);
+                inStringSearch(chunk, (int) parts + 1, actualPageSize, sb.toString());
+            }
+        }
+
+        return results;
+    }
+
     public Map<String, Map<Integer, List<Integer>>> doSearchNew(String path) throws IOException {
         File dir = new File(path);
         if (dir.isDirectory()) {
