@@ -68,6 +68,16 @@
                 <artifactId>search-server</artifactId>
                 <version>${projectVersion}</version>
             </dependency>
+            <dependency>
+                <groupId>com.griddynamics.logtool</groupId>
+                <artifactId>udp-sendler</artifactId>
+                <version>${projectVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.griddynamics.logtool</groupId>
+                <artifactId>ssh-tailer</artifactId>
+                <version>${projectVersion}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -162,6 +172,8 @@
         <module>web-ui</module>
 	    <module>filetailer</module>
         <module>search-server</module>
+        <module>udp-sendler</module>
+        <module>ssh-tailer</module>
     </modules>
 
     <build>

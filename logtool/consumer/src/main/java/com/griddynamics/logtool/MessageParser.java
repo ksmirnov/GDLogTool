@@ -12,7 +12,7 @@ public class MessageParser {
     private static final String ABSOLUTE="[0-2][0-9]:[0-5][0-9]:[0-5][0-9],[0-9]{3}";
     private static final String AnyDate = "(?:(?:" + DATEDate + ")?|(?:" + ISO8601Date + ")?)?";
     private static final String delimiter = "[ ]*[|][ ]*";
-    private static final String appInst = "([a-zA-Z0-9]+)";
+    private static final String appInst = "([a-zA-Z0-9_\\.\\-]+)";
     private static final Pattern parsePattern = Pattern.compile("[^|]*" + delimiter + appInst +
             delimiter + appInst + delimiter +
             "(" + "(?:.+" + delimiter + ")?(" + AnyDate + " ?" + ABSOLUTE + ")[ ]*[|][ ]*.+)[\\n]?",Pattern.DOTALL);
