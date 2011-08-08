@@ -17,12 +17,12 @@ import java.util.regex.Pattern;
 
 
 public class SshTailer {
-    Map<String, Thread> activeWatchingHosts = new HashMap<String,Thread>();
+    Map<String, Thread> activeWatchingHosts = new HashMap<String, Thread>();
 
     public static void main(String[] args) {
         Properties props = new Properties();
         try {
-            InputStream in = SshTailer.class.getResourceAsStream("/sshtailerConfig.properties")    ;
+            InputStream in = SshTailer.class.getResourceAsStream("/sshtailerConfig.properties");
             props.load(in);
             in.close();
         } catch (IOException e) {
@@ -31,21 +31,21 @@ public class SshTailer {
         SshTailer sshTailer = new SshTailer();
         String hostToSend = props.getProperty("hostToSend");
         int portToSend = Integer.parseInt(props.getProperty("portToSend"));
-        sshTailer.addHostForWatching(props.getProperty("hostToReadFrom"),props.getProperty("filesToReadFrom"),
-                hostToSend,portToSend);
-        int i =1;
-        while(props.getProperty("hostToReadFrom" + i) != null ){
-            sshTailer.addHostForWatching(props.getProperty("hostToReadFrom" + i),props.getProperty("filesToReadFrom" + i),
-                hostToSend,portToSend);
+        sshTailer.addHostForWatching(props.getProperty("hostToReadFrom"), props.getProperty("filesToReadFrom"),
+                hostToSend, portToSend);
+        int i = 1;
+        while (props.getProperty("hostToReadFrom" + i) != null) {
+            sshTailer.addHostForWatching(props.getProperty("hostToReadFrom" + i), props.getProperty("filesToReadFrom" + i),
+                    hostToSend, portToSend);
             i++;
         }
     }
 
-    public void addHostForWatching(String hostToReadFrom,String filesToRead, String hostToSend, int portToSend) {
-            WatchingSsh watchingSsh = new WatchingSsh(hostToReadFrom,filesToRead, hostToSend, portToSend);
-            Thread t = new Thread(watchingSsh);
-            activeWatchingHosts.put(hostToReadFrom, t);
-            t.start();
+    public void addHostForWatching(String hostToReadFrom, String filesToRead, String hostToSend, int portToSend) {
+        WatchingSsh watchingSsh = new WatchingSsh(hostToReadFrom, filesToRead, hostToSend, portToSend);
+        Thread t = new Thread(watchingSsh);
+        activeWatchingHosts.put(hostToReadFrom, t);
+        t.start();
     }
 
     public void removeHostWatching(String filepath) {
@@ -72,31 +72,30 @@ class WatchingSsh implements Runnable {
         sendler = new UDPSendler(hostToSend, portToSend);
         this.host = hostToReadFrom;
         this.files = filesToRead;
-        if (filesToRead.indexOf("*") == -1 && filesToRead.indexOf(" ") == -1 ) {
+        if (filesToRead.indexOf("*") == -1 && filesToRead.indexOf(" ") == -1) {
             singleFile = true;
         } else {
-            StringTokenizer stTok = new StringTokenizer(filesToRead," ");
+            StringTokenizer stTok = new StringTokenizer(filesToRead, " ");
             while (stTok.hasMoreElements()) {
                 String bufSt = stTok.nextToken();
-                if(bufSt.indexOf('*') != -1){
-                   patternList.add(createPattern(bufSt)); 
+                if (bufSt.indexOf('*') != -1) {
+                    patternList.add(createPattern(bufSt));
                 }
             }
             singleFile = false;
         }
     }
 
-    private Pattern createPattern(String st){
-        System.out.println(st);
+    private Pattern createPattern(String st) {
         StringBuilder sb = new StringBuilder(st);
         int starInd = sb.indexOf("*");
-        sb.insert(starInd,".");
-        if(sb.indexOf("/",starInd)!= -1){
-            sb.insert(sb.indexOf("/",starInd),")");
+        sb.insert(starInd, ".");
+        if (sb.indexOf("/", starInd) != -1) {
+            sb.insert(sb.indexOf("/", starInd), ")");
         } else {
             sb.append(")");
         }
-        sb.insert(sb.lastIndexOf("/",starInd)+1,"(");
+        sb.insert(sb.lastIndexOf("/", starInd) + 1, "(");
         return Pattern.compile(sb.toString());
     }
 
@@ -109,24 +108,25 @@ class WatchingSsh implements Runnable {
         }
 
     }
-    private boolean checkStringForHeader(String mes){
-        if(singleFile){
+
+    private boolean checkStringForHeader(String mes) {
+        if (singleFile) {
             return false;
         }
-        Matcher m =headerPatter.matcher(mes);
-        if(m.matches()){
+        Matcher m = headerPatter.matcher(mes);
+        if (m.matches()) {
             String s = m.group(1);
             boolean match = false;
-            for(Pattern p: patternList){
+            for (Pattern p : patternList) {
                 m = p.matcher(s);
-                if(m.matches()){
+                if (m.matches()) {
                     header = m.group(1);
                     match = true;
                     break;
                 }
             }
-            if(!match){
-                header = s.substring(s.lastIndexOf("/")+1, s.length());
+            if (!match) {
+                header = s.substring(s.lastIndexOf("/") + 1, s.length());
             }
             return true;
         }
@@ -151,8 +151,8 @@ class WatchingSsh implements Runnable {
                         if ((char) r != '\n') {
                             sb.append((char) r);
                         } else if (sb.toString().length() > 1) {
-                            if(!checkStringForHeader(sb.toString())){
-                            sendler.sendMsg(convertToConsumerFormat(sb.toString()));
+                            if (!checkStringForHeader(sb.toString())) {
+                                sendler.sendMsg(convertToConsumerFormat(sb.toString()));
                             }
                             sb.delete(0, sb.length());
                         }
