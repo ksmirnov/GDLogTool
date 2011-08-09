@@ -18,6 +18,7 @@ public class SearchServerImpl implements SearchServer {
 
     private static final Logger logger = LoggerFactory.getLogger(SearchServerImpl.class);
 
+    private CoreContainer container;
     private EmbeddedSolrServer server;
     private String solrPath;
     
@@ -30,7 +31,6 @@ public class SearchServerImpl implements SearchServer {
             }
         }
         CoreContainer.Initializer initializer = new CoreContainer.Initializer();
-        CoreContainer container;
         try {
             container = initializer.initialize();
         } catch (Exception e) {
@@ -92,6 +92,11 @@ public class SearchServerImpl implements SearchServer {
         } catch (Exception e) {
             logger.error("Delete query failed", e);
         }
+    }
+
+    @Override
+    public void shutdown() {
+        container.shutdown();
     }
 
     public String getSolrPath() {
