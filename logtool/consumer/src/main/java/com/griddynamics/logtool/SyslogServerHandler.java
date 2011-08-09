@@ -44,6 +44,9 @@ public class SyslogServerHandler extends SimpleChannelHandler {
             receivedMessage.append((char) buf.readByte());
         }
         ParsedMessage msg = MessageParser.parseMessage(receivedMessage.toString());
+        if(msg.getMessage() == null){
+            msg.setMessage(receivedMessage.toString());
+        }
         Map<String, String> doc = new LinkedHashMap<String, String>();
         doc.put("application", msg.getApplication());
         doc.put("host", host);
