@@ -27,4 +27,9 @@ public interface SearchServer {
      */
     void delete(String query);
 
+    /**
+    * Stops server
+    */
+    void shutdown();
+
 }
