@@ -29,6 +29,10 @@ public class ActionFactory {
             GrepSearchAction gsa = new GrepSearchAction();
             gsa.setStorage(storage);
             return gsa;
+        } else if (actionName.equalsIgnoreCase("doSolrSearch")) {
+            SolrSearchAction ssa = new SolrSearchAction();
+            ssa.setStorage(storage);
+            return ssa;
         } else {
             throw new RuntimeException(" was unable to find an action named '" + actionName + "'.");
         }

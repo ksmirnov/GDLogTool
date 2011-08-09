@@ -22,7 +22,7 @@ public class LogAction extends Action {
     public PartToView getLogToView(long size, long partToView, int count) {
         PartToView ptw = new PartToView();
         int logToView = count;
-        if (size - count <= partToView || partToView == -1) {
+        if (/*size - count <= partToView ||*/ partToView == -1) {
             partToView = size - count;
         }
         if (size < count) {

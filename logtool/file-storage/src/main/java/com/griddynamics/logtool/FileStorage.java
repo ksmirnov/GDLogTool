@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 public class FileStorage implements Storage {
     private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
     private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormat.forPattern("yyyy-dd-MMM").withLocale(Locale.ENGLISH);
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("HH:mm:ss");
     private static final int DAY_PATTERN_STRING_LENGTH = 11;
 
     private String logFolder = "";
@@ -391,9 +390,11 @@ public class FileStorage implements Storage {
             Tree node = new Tree();
             File folder = new File(buildPath(clearPath));
             File[] logs = folder.listFiles();
-            for (File log : logs) {
-                if (log.isFile()) {
-                    node.getChildren().put(log.getName(), null);
+            if (logs != null) {
+                for (File log : logs) {
+                    if (log.isFile()) {
+                        node.getChildren().put(log.getName(), null);
+                    }
                 }
             }
             return node;
