@@ -32,6 +32,7 @@ public class ActionFactory {
         } else if (actionName.equalsIgnoreCase("doSolrSearch")) {
             SolrSearchAction ssa = new SolrSearchAction();
             ssa.setStorage(storage);
+            ssa.setSearchServer(searchServer);
             return ssa;
         } else {
             throw new RuntimeException(" was unable to find an action named '" + actionName + "'.");
