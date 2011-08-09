@@ -17,12 +17,13 @@ public class Searcher {
     private int pageSize;
     private int actualPageSize;
     private int startPagePos = -1;
-    private int endPagePos = pageSize + 5;
+    private int endPagePos;
 
     public Searcher(String request, int pageSize) {
         this.request = request;
         this.pageSize = pageSize;
         this.actualPageSize = pageSize + request.length() - 1;
+        this.endPagePos = pageSize + 1;
     }
 
     public Map<String, Map<Integer, List<Integer>>> doSolrSearch(List<Map<String, String>> solrSearchResult) throws IOException {
