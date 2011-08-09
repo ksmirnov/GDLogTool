@@ -16,11 +16,14 @@ public class Searcher {
     private Map<String, Map<Integer, List<Integer>>> results = new HashMap<String, Map<Integer, List<Integer>>>();
     private int pageSize;
     private int actualPageSize;
+    private int startPagePos = -1;
+    private int endPagePos;
 
     public Searcher(String request, int pageSize) {
         this.request = request;
         this.pageSize = pageSize;
         this.actualPageSize = pageSize + request.length() - 1;
+        this.endPagePos = pageSize + 1;
     }
 
     public Map<String, Map<Integer, List<Integer>>> doSolrSearch(List<Map<String, String>> solrSearchResult) throws IOException {
@@ -30,14 +33,16 @@ public class Searcher {
 
             long startPos = Long.parseLong(app.get("startIndex"));
             long length = Long.parseLong(app.get("length"));
-            long parts = length / pageSize;
+            startPagePos = (int) (startPos % pageSize);
+            endPagePos = (int) (startPos + length) % pageSize;
+
             byte[] buf = new byte[actualPageSize];
 
             StringBuffer sb = new StringBuffer(path);
-            sb = sb.append(" ").append(startPos).append(" ").append(length);
+            sb = sb.append(" (").append(startPos).append(", ").append(length).append(")");
 
-            for (int i = 1; i < parts + 1; i++) {
-                long curPos = startPos + (i - 1) * pageSize;
+            for (int i = (int) (startPos / pageSize); i <= (startPos + length) / pageSize; i++) {
+                long curPos = i * pageSize;
                 rafLog.seek(curPos);
                 String chunk = null;
                 int bytesRead = rafLog.read(buf);
@@ -50,18 +55,6 @@ public class Searcher {
                     chunk = new String(buff);
                 }
                 inStringSearch(chunk, i, actualPageSize, sb.toString());
-            }
-
-            long remainingBytes = length - parts * pageSize;
-            if (remainingBytes > 0) {
-                long curPos = startPos + parts * pageSize;
-                rafLog.seek(curPos);
-                String chunk = null;
-                byte[] buff = new byte[(int) remainingBytes];
-                rafLog.seek(curPos);
-                rafLog.read(buff);
-                chunk = new String(buff);
-                inStringSearch(chunk, (int) parts + 1, actualPageSize, sb.toString());
             }
         }
 
@@ -127,7 +120,7 @@ public class Searcher {
         int pos = -1;
         while (pos < str.length()) {
             int index = str.indexOf(request, pos + 1);
-            if (index >= 0) {
+            if (index >= 0 && index >= startPagePos && index < endPagePos) {
                 if (!results.containsKey(absolutePath)) {
                     results.put(absolutePath, new HashMap<Integer, List<Integer>>());
                 }
