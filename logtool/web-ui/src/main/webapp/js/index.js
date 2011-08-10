@@ -366,7 +366,7 @@ Ext.onReady(function() {
                     },
                     method: 'GET',
                     success: function (result, request) {
-                        eval(result.responseText);
+                        eval(replaceStringDelimiters(result.responseText));
                         solrSearchOccurrences = occurrences;
                         if (solrSearchOccurrences.length == 0) {
                             Ext.MessageBox.show({
