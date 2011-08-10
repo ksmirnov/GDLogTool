@@ -137,6 +137,20 @@ public interface Storage {
     Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request, int pageSize) throws IOException;
 
     /**
+     * This method searches for request string in results of solr search.
+     * @param results - solr search results
+     * @param request - String to search
+     * @param pageSize - Size of page for read
+     * @return - All occurrences of request represented as HashMap
+     * with absolute log file name with start index and length of message as key and HashMap with number
+     * of chunk of file in which request was found as key
+     * and request positions in that chunk represented as ArrayList as value
+     * as value.
+     * @throws IOException
+     */
+    Map<String, Map<Integer, List<Integer>>> doGrepOverSolrSearch(List<Map<String, String>> results, String request, int pageSize) throws IOException;
+
+    /**
      * This method return current length of specified log file.
      * @param path - Array of path segments
      * @param name - Log file name

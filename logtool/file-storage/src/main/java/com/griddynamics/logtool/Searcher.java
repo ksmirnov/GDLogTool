@@ -16,14 +16,15 @@ public class Searcher {
     private Map<String, Map<Integer, List<Integer>>> results = new HashMap<String, Map<Integer, List<Integer>>>();
     private int pageSize;
     private int actualPageSize;
-    private int startPagePos = -1;
-    private int endPagePos;
+    private int startPagePos = -2;
+    private int endPagePos = -2;
+    private int startPage = -2;
+    private int endPage = -2;
 
     public Searcher(String request, int pageSize) {
         this.request = request;
         this.pageSize = pageSize;
         this.actualPageSize = pageSize + request.length() - 1;
-        this.endPagePos = pageSize + 1;
     }
 
     public Map<String, Map<Integer, List<Integer>>> doSolrSearch(List<Map<String, String>> solrSearchResult) throws IOException {
@@ -35,13 +36,19 @@ public class Searcher {
             long length = Long.parseLong(app.get("length"));
             startPagePos = (int) (startPos % pageSize);
             endPagePos = (int) (startPos + length) % pageSize;
+            startPage = (int) (startPos / pageSize);
+            endPage = (int) ((startPos + length) / pageSize);
 
             byte[] buf = new byte[actualPageSize];
 
-            StringBuffer sb = new StringBuffer(path);
-            sb = sb.append(" (").append(startPos).append(", ").append(length).append(")");
+            StringBuffer sb = new StringBuffer(path + "||<>||");
+            sb.append(app.get("application")).append(" / ");
+            sb.append(app.get("host")).append(" / ");
+            sb.append(app.get("instance")).append(" / ");
+            sb.append(app.get("date"));
+            sb.append(" (").append(startPos).append(", ").append(length).append(")");
 
-            for (int i = (int) (startPos / pageSize); i <= (startPos + length) / pageSize; i++) {
+            for (int i = startPage; i <= endPage; i++) {
                 long curPos = i * pageSize;
                 rafLog.seek(curPos);
                 String chunk = null;
@@ -54,7 +61,7 @@ public class Searcher {
                     rafLog.read(buff);
                     chunk = new String(buff);
                 }
-                inStringSearch(chunk, i, actualPageSize, sb.toString());
+                inStringSearch(chunk, i + 1, actualPageSize, sb.toString());
             }
         }
 
@@ -120,7 +127,11 @@ public class Searcher {
         int pos = -1;
         while (pos < str.length()) {
             int index = str.indexOf(request, pos + 1);
-            if (index >= 0 && index >= startPagePos && index < endPagePos) {
+            if (index >= 0) {
+                if ((chunkNumber - 1 == startPage && index < startPagePos) || (chunkNumber - 1 == endPage && index >= endPagePos)) {
+                    pos = index + 1;
+                    continue;
+                }
                 if (!results.containsKey(absolutePath)) {
                     results.put(absolutePath, new HashMap<Integer, List<Integer>>());
                 }

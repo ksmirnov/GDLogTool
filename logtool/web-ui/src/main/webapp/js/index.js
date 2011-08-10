@@ -26,6 +26,7 @@ Ext.onReady(function() {
 
     var solrSearchOccurrences = [];
     var isSolrSearch = false;
+    var isGrepOverSolr = false;
     
     var next = Ext.create('Ext.Button', {
         text: 'Next',
@@ -166,11 +167,12 @@ Ext.onReady(function() {
                                     'Actions with checked items:',
                                     '->', 
                                         {
-                                            icon : 'extjs/resources/delete.gif',
+                                            icon: 'extjs/resources/delete.gif',
                                             text: 'Delete',
                                             handler : deleteHandler
                                         },
                                         {
+                                            icon: 'thirdparty/magnifier.png',
                                             text: 'Search',
                                             handler: openSearchWindow
                                         }
@@ -259,6 +261,9 @@ Ext.onReady(function() {
                     resizable: false,
                     width: 500,
                     items: searchField,
+                    listeners: {
+                        destroy: onCancel
+                    },
                     buttons: [{
                         text: 'Prev page',
                         handler: prevPage
@@ -278,44 +283,56 @@ Ext.onReady(function() {
                         text: 'Cancel',
                         handler: function() {
                             searchWindow.close();
-                            clearDiv();
-                            searchRunning = false;
-                            var searchResApps = [];
-                            var searchResPages = [];
-                            searchGridStore.removeAll();
-                            searchField = new Ext.form.TextField({
-                                    id: 'searchValue',
-                                    fieldLabel: 'Search request',
-                                    width: 489
-                                });
-
-                            isSolrSearch = false;
-                            solrSearchOccurrences = [];
                         }
                     }]
                 });
                 searchWindow.show();
             };
 
+            function onCancel() {
+                clearDiv();
+                searchRunning = false;
+                var searchResApps = [];
+                var searchResPages = [];
+                searchGridStore.removeAll();
+                searchField = new Ext.form.TextField({
+                        id: 'searchValue',
+                        fieldLabel: 'Search request',
+                        width: 489
+                    });
+
+                isSolrSearch = false;
+                isGrepOverSolr = false;;
+                solrSearchOccurrences = [];
+            };
+
             function doSearch() {
                 clearDiv();
                 searchGridStore.removeAll();
 
-                if (searchField.getValue().indexOf('solr: ') == 0) {
-                    doSolrSearch();
-                    return;
+                var grepIndex = searchField.getValue().indexOf('grep: ');
+
+                if (grepIndex == -1) {
+                    doSolrSearch(searchField.getValue());
+                } else if (grepIndex > 0) {
+                    doGrepSolrSearch(searchField.getValue().substring(0, grepIndex - 1), searchField.getValue().substring(grepIndex + 6));
+                } else {
+                    doGrepSearch();
                 }
+            };
 
+            function doGrepSearch() {
                 isSolrSearch = false;
-
+                isGrepOverSolr = false;
                 searchRunning = true;
+
                 var selModel = treePanel.getSelectionModel();
                 var selNodes = selModel.getSelection();
                 if (selNodes.length > 0) {
                     var selNode = selNodes[0];
                     var path = getFilePath(selNode);
                     searchRootDir = path;
-                    var searchRequest = searchField.getValue();
+                    var searchRequest = searchField.getValue().substring(6);
                     searchRequestLength = searchRequest.length;
 
                     Ext.Ajax.request({
@@ -328,18 +345,7 @@ Ext.onReady(function() {
                             },
                         method: 'GET',
                         success: function (result, request) {
-                            searchResult = getSearchResult(result.responseText);
-
-                            searchResApps = [];
-                            for (app in searchResult) {
-                                searchResApps.push(app);
-                            };
-                            searchResCurApp = 0;
-
-                            updateSearchPagePos('next');
-
-                            addSearchResultToGrid();
-                            printNewPage();
+                            initSearchRes(result);
                         },
                         failure: function (result, request) {
                             Ext.MessageBox.alert('Failed', result.responseText);
@@ -348,13 +354,14 @@ Ext.onReady(function() {
                 }
             };
 
-            function doSolrSearch() {
+            function doSolrSearch(query) {
                 isSolrSearch = true;
-                var query = searchField.getValue().substring(6);
+                searchRunning = true;
                 Ext.Ajax.request({
                     url : loc + '/logtool' ,
                     params : {
-                        action : 'doSolrSearch',
+                        action: 'doSolrSearch',
+                        subaction: 'solrsearch',
                         query: query
                     },
                     method: 'GET',
@@ -380,12 +387,60 @@ Ext.onReady(function() {
                 });
             };
 
+            function doGrepSolrSearch(query, request) {
+                isSolrSearch = false
+                isGrepOverSolr = true;
+                searchRunning = true;
+                searchRequestLength = request.length;
+
+                Ext.Ajax.request({
+                    url : loc + '/logtool' ,
+                    params : {
+                        action: 'doSolrSearch',
+                        subaction: 'grepOverSolr',
+                        query: query,
+                        request: request,
+                        pageSize: lineForPage
+                    },
+                    method: 'GET',
+                    success: function (result, request) {
+                        initSearchRes(result);
+                    },
+                    failure: function (result, request) {
+                        Ext.MessageBox.alert('Failed', result.responseText);
+                    }
+                });
+            };
+
+            function initSearchRes(result) {
+                searchResult = getSearchResult(result.responseText);
+
+                searchResApps = [];
+                for (app in searchResult) {
+                    searchResApps.push(app);
+                };
+                searchResCurApp = 0;
+
+                updateSearchPagePos('next');
+
+                addSearchResultToGrid();
+                printNewPage();
+            };
+
             function addSearchResultToGrid() {
                 if (!isSolrSearch) {
                     if (searchResApps.length != 0) {
-                        for (resApp in searchResult) {
-                            var app = resApp.substring(resApp.indexOf(reversePath(searchRootDir)), resApp.length);
-                            searchGridStore.add({appspec: app, occurrences: countOccurrences(resApp)});
+                        if (!isGrepOverSolr) {
+                            for (resApp in searchResult) {
+                                var reversedSearchDir = reversePath(searchRootDir);
+                                reversedSearchDir = reversedSearchDir.substring(0, reversedSearchDir.length - 1);
+                                var app = resApp.substring(resApp.indexOf(reversedSearchDir), resApp.length);
+                                searchGridStore.add({appspec: app, occurrences: countOccurrences(resApp)});
+                            }
+                        } else {
+                            for (resApp in searchResult) {
+                                searchGridStore.add({appspec: resApp.substring(resApp.indexOf('||<>||') + 6), occurrences: countOccurrences(resApp)});
+                            }
                         }
                     } else {
                         Ext.MessageBox.show({
@@ -448,7 +503,7 @@ Ext.onReady(function() {
 
             function next() {
                 if (!isSolrSearch) {
-                    if (searchResApps.length > 0) {
+                    if (searchResApps.length > 0 && searchRunning) {
                         var occurrences = searchResult[searchResApps[searchResCurApp]][searchResPages[searchResCurPage]];
                         if (searchResCurOcc + 1 == occurrences.length) {
                             if (searchResCurPage + 1 == searchResPages.length) {
@@ -469,7 +524,7 @@ Ext.onReady(function() {
                         }
                     }
                 } else {
-                    if (searchResCurApp + 1 != solrSearchOccurrences.length) {
+                    if (searchResCurApp + 1 != solrSearchOccurrences.length && searchRunning) {
                         searchResCurApp++;
                         updateSolrSearchPagePos();
                         printNewPage();
@@ -479,7 +534,7 @@ Ext.onReady(function() {
 
             function prev() {
                 if (!isSolrSearch) {
-                    if (searchResApps.length > 0) {
+                    if (searchResApps.length > 0 && searchRunning) {
                         var occurrences = searchResult[searchResApps[searchResCurApp]][searchResPages[searchResCurPage]];
                         if (searchResCurOcc - 1 < 0) {
                             if (searchResCurPage - 1 < 0) {
@@ -500,7 +555,7 @@ Ext.onReady(function() {
                         }
                     }
                 } else {
-                    if (searchResCurApp - 1 >= 0) {
+                    if (searchResCurApp - 1 >= 0 && searchRunning) {
                         searchResCurApp--;
                         updateSolrSearchPagePos();
                         printNewPage();
@@ -509,14 +564,14 @@ Ext.onReady(function() {
             };
 
             function nextPage() {
-                if (!searchLastPage) {
+                if (!searchLastPage && searchRunning) {
                     searchViewCurPage++;
                     printNewPage();
                 }
             };
 
             function prevPage() {
-                if (searchViewCurPage - 1 > 0) {
+                if (searchViewCurPage - 1 > 0 && searchRunning) {
                     searchViewCurPage--;
                     printNewPage();
                 }
@@ -564,11 +619,18 @@ Ext.onReady(function() {
 
             function printNewPage() {
                 if (!isSolrSearch) {
+                    var path;
+                    if (!isGrepOverSolr) {
+                        path = reversePath(searchResApps[searchResCurApp]);
+                    } else {
+                        var app = searchResApps[searchResCurApp];
+                        path = reversePath(app.substring(0, app.indexOf('||<>||')));
+                    }
                     Ext.Ajax.request({
                         url : loc + '/logtool' ,
                         params : {
                             action : 'getlog',
-                            path: reversePath(searchResApps[searchResCurApp]),
+                            path: path,
                             partToView: (searchViewCurPage - 1) * lineForPage,
                             lines: lineForPage
                         },
@@ -601,7 +663,13 @@ Ext.onReady(function() {
                                 res = lightFirstBytes(res);
                             }
                             res = replaceStringDelimiters(res);
-                            res = '<FONT style="BACKGROUND-COLOR: lightblue">' + searchResApps[searchResCurApp]
+
+                            var app = searchResApps[searchResCurApp];;
+                            if (isGrepOverSolr) {
+                                app = app.substring(0, app.indexOf('||<>||'));
+                            }
+
+                            res = '<FONT style="BACKGROUND-COLOR: lightblue">' + app
                                     + '</FONT>' + '<br>Page viewed '
                                     + searchViewCurPage + ' from ' + totalPages + '<br>' + res;
 
