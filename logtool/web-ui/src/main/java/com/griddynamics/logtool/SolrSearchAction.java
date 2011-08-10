@@ -11,15 +11,28 @@ import java.util.Map;
 public class SolrSearchAction extends Action {
     public void perform(HttpServletRequest req, HttpServletResponse resp) {
         try {
-            doSearch(req.getParameter("query"), resp.getOutputStream());
+            String subAction = req.getParameter("subaction");
+            if (subAction.equals("solrsearch")) {
+                doSolrSearch(req.getParameter("query"), resp.getOutputStream());
+            } else {
+                doGrepOverSolr(req.getParameter("query"), req.getParameter("request"), Integer.parseInt(req.getParameter("pageSize")), resp.getOutputStream());
+            }
         } catch (IOException ex) {
 
         }
     }
 
-    public void doSearch(String request, ServletOutputStream sos) {
+    public void doGrepOverSolr(String query, String request, int pageSize, ServletOutputStream sos) {
         try {
-            sos.print(getJsonFromListMap(searchServer.search(request)));
+            sos.print(storage.doGrepOverSolrSearch(searchServer.search(query), request, pageSize).toString());
+        } catch (IOException ex) {
+
+        }
+    }
+
+    public void doSolrSearch(String query, ServletOutputStream sos) {
+        try {
+            sos.print(getJsonFromListMap(searchServer.search(query)));
         } catch (IOException ex) {
 
         }
@@ -27,7 +40,7 @@ public class SolrSearchAction extends Action {
 
     private String getJsonFromListMap(List<Map<String, String>> list) {
         StringBuilder stringBuilder = new StringBuilder("occurrences = [");
-        if (!list.isEmpty()) {
+        if (list != null && !list.isEmpty()) {
             for (Map<String, String> map : list) {
                 stringBuilder.append(getJsonFromMap(map)).append(", ");
             }

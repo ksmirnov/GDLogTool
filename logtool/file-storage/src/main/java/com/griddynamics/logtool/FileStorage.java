@@ -186,6 +186,12 @@ public class FileStorage implements Storage {
     }
 
     @Override
+    public Map<String, Map<Integer, List<Integer>>> doGrepOverSolrSearch(List<Map<String, String>> results, String request, int pageSize) throws IOException {
+        Searcher searcher = new Searcher(request, pageSize);
+        return searcher.doSolrSearch(results);
+    }
+
+    @Override
         public synchronized Map<String, String> addMessage(String[] path, String timestamp, String message) {
             if (needToWipe()) {
                 //sendNotification("Storage quota reached.", quotaAlertSubscribers);
@@ -568,7 +574,12 @@ public class FileStorage implements Storage {
         if (!result.toString().contains(logFolder)) {
             return new StringBuffer(logFolder).append(result.toString()).toString();
         } else {
-            return result.toString();
+            int index = result.toString().indexOf(logFolder);
+            if (index == 0 || index > 1) {
+                return result.toString();
+            } else {
+                return result.toString().substring(1);
+            }
         }
     }
 
