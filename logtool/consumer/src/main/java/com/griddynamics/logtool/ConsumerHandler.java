@@ -25,6 +25,7 @@ public class ConsumerHandler extends SimpleChannelHandler {
 
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
     private final DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("HH:mm:ss");
+    private final DateTimeFormatter dateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
     private final Storage storage;
     private final SearchServer searchServer;
 
@@ -45,6 +46,10 @@ public class ConsumerHandler extends SimpleChannelHandler {
         } else {
             host = e.getRemoteAddress().toString();
         }
+        String port = "";
+        if(ctx.getChannel().getLocalAddress() instanceof InetSocketAddress) {
+            port = String.valueOf(((InetSocketAddress) ctx.getChannel().getLocalAddress()).getPort());
+        }
         if(e.getMessage() instanceof LoggingEvent) {
             LoggingEvent loggingEvent = (LoggingEvent) e.getMessage();
             String message = timeFormatter.print(loggingEvent.timeStamp) + " " + loggingEvent.getMessage().toString();
@@ -57,6 +62,11 @@ public class ConsumerHandler extends SimpleChannelHandler {
             String[] path = new String[doc.size()];
             doc.values().toArray(path);
             doc.putAll(storage.addMessage(path, timestamp, message));
+            doc.put("content", message);
+            doc.put("date", dateFormatter.print(loggingEvent.timeStamp));
+            doc.put("time", timeFormatter.print(loggingEvent.timeStamp));
+            doc.put("level", loggingEvent.getLevel().toString());
+            doc.put("port", port);
             searchServer.index(doc);
         } else {
             throw new IllegalArgumentException("argument is not instance of LoggingEvent");

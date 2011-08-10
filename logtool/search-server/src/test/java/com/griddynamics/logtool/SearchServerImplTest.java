@@ -34,6 +34,7 @@ public class SearchServerImplTest {
         doc.put("path", "some path");
         doc.put("startIndex", "0");
         doc.put("length", "100");
+        doc.put("content", "Test message");
         searchServer.index(doc);
     }
 
@@ -57,6 +58,7 @@ public class SearchServerImplTest {
             assertTrue(entry.get("path").equals("some path"));
             assertTrue(entry.get("startIndex").equals("0"));
             assertTrue(entry.get("length").equals("100"));
+            assertTrue(entry.get("content").equals("Test message"));
         }
     }
 

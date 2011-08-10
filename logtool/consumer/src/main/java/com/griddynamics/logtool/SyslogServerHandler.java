@@ -20,6 +20,8 @@ public class SyslogServerHandler extends SimpleChannelHandler {
 
     private final Storage storage;
     private final SearchServer searchServer;
+    private final DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("HH:mm:ss");
+    private final DateTimeFormatter dateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     public SyslogServerHandler(Storage storage, SearchServer searchServer) {
         this.storage = storage;
@@ -54,6 +56,7 @@ public class SyslogServerHandler extends SimpleChannelHandler {
         String [] path = new String[doc.size()];
         doc.values().toArray(path);
         doc.putAll(storage.addMessage(path, msg.getTimestamp(), msg.getMessage()));
+        doc.put("content", msg.getMessage());
         searchServer.index(doc);
     }
 
