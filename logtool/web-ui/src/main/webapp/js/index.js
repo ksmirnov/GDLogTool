@@ -844,7 +844,11 @@ Ext.onReady(function() {
         }
         if (pathToLog == 'next') {
             pathToLog = selectedFilePath;
-            partViewed = partViewed + lineForPage;
+            if (lastPage) {
+                partViewid = -1;
+            } else {
+                partViewed = partViewed + lineForPage;
+            }
         }
 
         Ext.Ajax.request({
