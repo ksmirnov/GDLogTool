@@ -1,7 +1,10 @@
 package com.griddynamics.logtool;
 
 import org.apache.log4j.Category;
+import org.apache.log4j.Level;
 import org.apache.log4j.spi.LoggingEvent;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -19,6 +22,7 @@ public class ConsumerHandlerTest {
 
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
     private final DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("HH:mm:ss");
+    private final DateTimeFormatter dateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     private Storage mockedStorage;
     private SearchServer mockedSearch;
@@ -40,16 +44,21 @@ public class ConsumerHandlerTest {
         String message = "Test message";
 
         Category logger = mock(Category.class);
-        LoggingEvent testEvent = new LoggingEvent(null, logger, datetime, null, message, null);
+        LoggingEvent testEvent = new LoggingEvent(null, logger, datetime, Level.INFO, message, null);
         testEvent.setProperty("application", "testApp.testInstance");
 
         InetSocketAddress testAddress = new InetSocketAddress("testhost", 4444);
+
+        ChannelHandlerContext testCtx = mock(ChannelHandlerContext.class);
+        Channel testChannel = mock(Channel.class);
+        when(testChannel.getLocalAddress()).thenReturn(testAddress);
+        when(testCtx.getChannel()).thenReturn(testChannel);
 
         MessageEvent testMessage = mock(MessageEvent.class);
         when(testMessage.getRemoteAddress()).thenReturn(testAddress);
         when(testMessage.getMessage()).thenReturn(testEvent);
 
-        testHandler.messageReceived(null, testMessage);
+        testHandler.messageReceived(testCtx, testMessage);
 
         String[] pathToVerify = new String[3];
         pathToVerify[0] = "testApp";
@@ -62,6 +71,11 @@ public class ConsumerHandlerTest {
         mapToVerify.put("application", pathToVerify[0]);
         mapToVerify.put("host", pathToVerify[1]);
         mapToVerify.put("instance", pathToVerify[2]);
+        mapToVerify.put("content", message);
+        mapToVerify.put("date", dateFormatter.print(datetime));
+        mapToVerify.put("time", timeFormatter.print(datetime));
+        mapToVerify.put("level", Level.INFO.toString());
+        mapToVerify.put("port", "4444");
         verify(mockedSearch).index(mapToVerify);
     }
 }

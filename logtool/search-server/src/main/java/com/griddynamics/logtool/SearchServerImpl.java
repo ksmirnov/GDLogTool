@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.*;
 
+
 public class SearchServerImpl implements SearchServer {
 
     private static final Logger logger = LoggerFactory.getLogger(SearchServerImpl.class);
@@ -21,7 +22,6 @@ public class SearchServerImpl implements SearchServer {
     private CoreContainer container;
     private EmbeddedSolrServer server;
     private String solrPath;
-    
 
     public SearchServerImpl(String solrPath) {
         if(!solrPath.isEmpty() && !solrPath.equals("default")) {
@@ -40,10 +40,11 @@ public class SearchServerImpl implements SearchServer {
         this.solrPath = container.getSolrHome();
         server = new EmbeddedSolrServer(container, "collection1");
     }
-
+    
     @Override
     public void index(Map<String, String> fields) throws IllegalArgumentException {
-        if(!fields.containsKey("path") || !fields.containsKey("startIndex") || !fields.containsKey("length")) {
+        if(!fields.containsKey("path") || !fields.containsKey("startIndex") || !fields.containsKey("length") ||
+                !fields.containsKey("content")) {
             throw new IllegalArgumentException("Missing one or more required fields");
         }
         SolrInputDocument doc = new  SolrInputDocument();

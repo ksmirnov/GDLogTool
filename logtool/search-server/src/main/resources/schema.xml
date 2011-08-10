@@ -9,6 +9,7 @@
         <field name="path"        type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
         <field name="startIndex"  type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
         <field name="length"      type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
+        <field name="content"     type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
         <field name="host"        type="string"   indexed="true"  stored="true"  multiValued="false" />
         <field name="application" type="string"   indexed="true"  stored="true"  multiValued="false" />
         <field name="instance"    type="string"   indexed="true"  stored="true"  multiValued="false" />
