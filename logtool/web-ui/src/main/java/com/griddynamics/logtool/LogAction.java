@@ -43,7 +43,6 @@ public class LogAction extends Action {
             PartToView ptw = getLogToView(size, partToView, count);
             sos.print("{ 'partViewed': '" + ptw.getPartToView() + "' ,");
             sos.print(" 'total' : '" + size + " ' , 'log' : '");
-            //Temp code
             JSONOutputStream jos = new JSONOutputStream(sos);
             storage.getLogNew(pathList.toArray(new String[0]), logName, ptw.getPartToView(), ptw.getLogToView(), jos);
             sos.print(" '}");
