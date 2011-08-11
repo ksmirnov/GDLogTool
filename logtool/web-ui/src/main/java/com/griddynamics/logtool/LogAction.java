@@ -3,12 +3,10 @@ package com.griddynamics.logtool;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.util.List;
-import java.util.logging.Logger;
 
 import static com.griddynamics.logtool.PathConstructor.getPath;
 
@@ -45,7 +43,8 @@ public class LogAction extends Action {
             PartToView ptw = getLogToView(size, partToView, count);
             sos.print("{ 'partViewed': '" + ptw.getPartToView() + "' ,");
             sos.print(" 'total' : '" + size + " ' , 'log' : '");
-            storage.getLogNew(pathList.toArray(new String[0]), logName, ptw.getPartToView(), ptw.getLogToView(), sos);
+            JSONOutputStream jos = new JSONOutputStream(sos);
+            storage.getLogNew(pathList.toArray(new String[0]), logName, ptw.getPartToView(), ptw.getLogToView(), jos);
             sos.print(" '}");
             sos.flush();
         } catch (IOException e) {
@@ -72,5 +71,20 @@ public class LogAction extends Action {
 
         private long partToView;
         private int logToView;
+    }
+
+    static class JSONOutputStream extends FilterOutputStream {
+
+        public JSONOutputStream(OutputStream out) {
+            super(out);
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            if(b == '\'' || b == '\"' || b == '{' || b == '}') {
+                out.write('\\');
+            }
+            out.write(b);
+        }
     }
 }
