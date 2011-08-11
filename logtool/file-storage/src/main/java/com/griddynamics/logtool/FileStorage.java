@@ -569,7 +569,7 @@ public class FileStorage implements Storage {
     private String buildPath(String... path) {
         StringBuffer result = new StringBuffer();
         for (int i = 0; i < path.length; i++) {
-            result.append(File.separator).append(path[i]);
+            result.append(File.separator).append(path[i].trim());
         }
         if (!result.toString().contains(logFolder)) {
             return new StringBuffer(logFolder).append(result.toString()).toString();

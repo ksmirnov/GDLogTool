@@ -119,13 +119,15 @@ Ext.onReady(function() {
                     itemdblclick: function(dataView, record, item, index, e) {
                         if (!isSolrSearch) {
                             searchResCurApp = index;
-                            searchResCurPage = 0;
-                            searchResCurOcc = 0;
-                            searchBytesToLightFromPrevPage = 0;
-                            searchPageToLightFirstBytes = -1;
-                            searchLastPage = false;
+//                            searchResCurPage = 0;
+//                            searchResCurOcc = 0;
+//                            searchBytesToLightFromPrevPage = 0;
+//                            searchPageToLightFirstBytes = -1;
+//                            searchLastPage = false;
+//
+//                            searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
 
-                            searchViewCurPage = parseInt(searchResPages[searchResCurPage]);
+                            updateSearchPagePos('next');
 
                             printNewPage();
                         } else {
