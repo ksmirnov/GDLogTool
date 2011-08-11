@@ -211,18 +211,18 @@ Ext.onReady(function() {
             };
 
             function getFilePath(record) {
-                selectedFilePath = record.get('text');
+                var selectedPath = record.get('text');
                 node = record.parentNode;
                 while (!node.isRoot()) {
-                    selectedFilePath = selectedFilePath + '/'
+                    selectedPath = selectedPath + '/'
                             + node.get('text');
                     node = node.parentNode;
                 }
-                return selectedFilePath;
+                return selectedPath;
             };
 
             function deleteNode(selNode) {
-                selectedPath = getFilePath(selNode);
+                var selectedPath = getFilePath(selNode);
 
                 if (selNode.isLeaf()) {
                     document.getElementById('div2').innerHTML = '';
