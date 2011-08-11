@@ -13,7 +13,7 @@ public class DeleteLogAction extends Action {
         deleteLog(req.getParameter("path"));
         PrintWriter out = resp.getWriter();
         out.println("");
-        out.close();;
+        out.close();
     }
 
     public void deleteLog(String pathString) {

@@ -3,7 +3,21 @@
 <config>
     <luceneMatchVersion>LUCENE_33</luceneMatchVersion>
 
-    <lockType>simple</lockType>
+    <indexDefaults>
+        <useCompoundFile>false</useCompoundFile>
+        <mergeFactor>10</mergeFactor>
+        <maxBufferedDocs>1000</maxBufferedDocs>
+        <maxFieldLength>1000</maxFieldLength>
+        <writeLockTimeout>1000</writeLockTimeout>
+        <commitLockTimeout>10000</commitLockTimeout>
+        <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
+        <lockType>native</lockType>
+    </indexDefaults>
+
+    <mainIndex>
+        <reopenReaders>true</reopenReaders>
+        <infoStream file="INFOSTREAM.txt">true</infoStream>
+    </mainIndex>
 
     <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
 
