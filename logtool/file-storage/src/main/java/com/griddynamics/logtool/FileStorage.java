@@ -274,7 +274,7 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public synchronized void getLogNew(String[] path, String name, long startPos, int length, OutputStream outputStream) throws IOException {
+    public synchronized void getLogNew(String[] path, String name, long startPos, int length, OutputStream outputStream) throws IOException{
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String fileName = addToPath(buildPath(clearPath), name);
         if (!openFiles.containsKey(fileName)) {

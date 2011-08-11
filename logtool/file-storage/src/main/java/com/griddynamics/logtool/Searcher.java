@@ -28,40 +28,49 @@ public class Searcher {
     }
 
     public Map<String, Map<Integer, List<Integer>>> doSolrSearch(List<Map<String, String>> solrSearchResult) throws IOException {
-        for (Map<String, String> app : solrSearchResult) {
-            String path = app.get("path");
-            RandomAccessFile rafLog = new RandomAccessFile(path, "r");
+        if(solrSearchResult != null) {
+            for (Map<String, String> app : solrSearchResult) {
+                String path = app.get("path");
+                RandomAccessFile rafLog = new RandomAccessFile(path, "r");
 
-            long startPos = Long.parseLong(app.get("startIndex"));
-            long length = Long.parseLong(app.get("length"));
-            startPagePos = (int) (startPos % pageSize);
-            endPagePos = (int) (startPos + length) % pageSize;
-            startPage = (int) (startPos / pageSize);
-            endPage = (int) ((startPos + length) / pageSize);
+                long startPos = Long.parseLong(app.get("startIndex"));
+                long length = Long.parseLong(app.get("length"));
+                startPagePos = (int) (startPos % pageSize);
+                endPagePos = (int) (startPos + length) % pageSize;
+                startPage = (int) (startPos / pageSize);
+                endPage = (int) ((startPos + length) / pageSize);
 
-            byte[] buf = new byte[actualPageSize];
+                byte[] buf = new byte[actualPageSize];
 
-            StringBuffer sb = new StringBuffer(path + "||<>||");
-            sb.append(app.get("application")).append(" / ");
-            sb.append(app.get("host")).append(" / ");
-            sb.append(app.get("instance")).append(" / ");
-            sb.append(app.get("date"));
-            sb.append(" (").append(startPos).append(", ").append(length).append(")");
+                StringBuffer sb = new StringBuffer(path + "||<>||");
+                sb.append(app.get("application")).append(" / ");
+                sb.append(app.get("host")).append(" / ");
+                sb.append(app.get("instance")).append(" / ");
+                sb.append(app.get("date"));
+                sb.append(" (").append(startPos).append(", ").append(length).append(")");
 
-            for (int i = startPage; i <= endPage; i++) {
-                long curPos = i * pageSize;
-                rafLog.seek(curPos);
-                String chunk = null;
-                int bytesRead = rafLog.read(buf);
-                if (bytesRead == actualPageSize) {
-                    chunk = new String(buf);
-                } else {
-                    byte[] buff = new byte[bytesRead];
+                try {
+                for (int i = startPage; i <= endPage; i++) {
+                    long curPos = i * pageSize;
                     rafLog.seek(curPos);
-                    rafLog.read(buff);
-                    chunk = new String(buff);
+                    String chunk = null;
+                    int bytesRead = rafLog.read(buf);
+                    if (bytesRead == actualPageSize) {
+                        chunk = new String(buf);
+                    } else {
+                        byte[] buff = new byte[bytesRead];
+                        rafLog.seek(curPos);
+                        rafLog.read(buff);
+                        chunk = new String(buff);
+                    }
+                    inStringSearch(chunk, i + 1, actualPageSize, sb.toString());
                 }
-                inStringSearch(chunk, i + 1, actualPageSize, sb.toString());
+                } catch (IOException e) {
+                    rafLog.close();
+                    throw e;
+                } finally {
+                    rafLog.close();
+                }
             }
         }
 

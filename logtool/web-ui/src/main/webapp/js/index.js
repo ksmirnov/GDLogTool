@@ -1,7 +1,7 @@
 Ext.onReady(function() {
     var selectedFilePath = "";
     var partViewed;
-    var lineForPage = 500;
+    var lineForPage = 2500;
     var lastPage = false;
 
     var treeFromRoot;
