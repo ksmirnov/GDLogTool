@@ -889,13 +889,7 @@ Ext.onReady(function() {
     function replaceStringDelimetr(text) {
         var pattern = /\r\n|\r|\n/g;
         text = text.replace(pattern, "<br>");
-        var firstIndexOfLog = getLogInJsonIndex(text);
-        var headerText = text.substring(0, firstIndexOfLog);
-        var log = text.substring(firstIndexOfLog, text.length -2);
-        log = log.replace(/'/g," ");
-        log = log.replace(/{/g, "[");
-        log = log.replace(/}/g, "]");
-        return(headerText + log + "'}");
+        return(text);
     }
     var updateLog = function update() {
        if (!searchRunning) {
