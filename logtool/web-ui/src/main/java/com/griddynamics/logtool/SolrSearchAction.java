@@ -54,6 +54,7 @@ public class SolrSearchAction extends Action {
     }
 
     private String getJsonFromMap(Map<String, String> map) {
+        map.remove("content");
         StringBuilder stringBuilder = new StringBuilder("{");
         for (Map.Entry<String, String> pair : map.entrySet()) {
             stringBuilder.append("\"").append(pair.getKey()).append("\":\"").append(pair.getValue()).append("\", ");
