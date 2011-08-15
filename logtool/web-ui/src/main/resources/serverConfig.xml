@@ -6,11 +6,10 @@
     <import resource="fileStorageConfiguration.xml"/>
     <import resource="searchServerConfig.xml"/>
 
-    <bean id="consumer" class="com.griddynamics.logtool.Consumer" init-method="startServers">
+    <bean id="consumer" class="com.griddynamics.logtool.Consumer" init-method="startServers" destroy-method="stopServers">
         <property name="storage" ref="fileStorage"/>
         <property name="searchServer" ref="searchServer"/>
         <property name="log4jPort" value="4444"/>
-        <property name="syslogPort" value="4445"/>
     </bean>
 
 </beans>

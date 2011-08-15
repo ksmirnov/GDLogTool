@@ -6,6 +6,7 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.group.ChannelGroup;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -26,14 +27,16 @@ public class ConsumerHandlerTest {
 
     private Storage mockedStorage;
     private SearchServer mockedSearch;
-    private ConsumerHandler testHandler;
+    private Log4jEventsHandler testHandler;
+    private ChannelGroup mockedChannelGroup;  
     
 
     @Before
     public void init() {
         mockedStorage = mock(Storage.class);
         mockedSearch = mock(SearchServer.class);
-        testHandler = new ConsumerHandler(mockedStorage, mockedSearch);
+        mockedChannelGroup = mock(ChannelGroup.class);
+        testHandler = new Log4jEventsHandler(mockedStorage, mockedSearch, mockedChannelGroup);
     }
 
     @Test
