@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<listeners>
+    <listener name="listener1">
+        <port>4445</port>
+        <regexp>[^|]*[ ]*[|][ ]*([a-zA-Z0-9_\.\-]+)[ ]*[|][ ]*([a-zA-Z0-9_\.\-]+)[ ]*[|][ ]*((?:.+[ ]*[|][ ]*)?((?:(?:[0-3][0-9] [JFMASOND][a-z]{2} 2[0-9]{3})?|(?:2[0-9]{3}-[0-1][0-9]-[0-3][0-9])?)? ?[0-2][0-9]:[0-5][0-9]:[0-5][0-9],[0-9]{3})[ ]*[|][ ]*.+)[\n]?</regexp>
+        <groups>
+            <application>1</application>
+            <instance>2</instance>
+            <content>3</content>
+            <date>4</date>
+        </groups>
+    </listener>
+</listeners>

@@ -1,32 +1,31 @@
 package com.griddynamics.logtool;
 
-import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
-import java.net.InetSocketAddress;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.*;
+import java.util.*;
 
 public class Consumer {
+    private static final Logger logger = LoggerFactory.getLogger(Log4jEventsHandler.class);
+    private Map<Integer, SyslogServer> syslogServers = new HashMap<Integer, SyslogServer>();
+    Log4jEventsServer log4jEventsServer;
+    private long lastCheckConfFile = 0;
+
 
     private int log4jPort = 4444;
-    private int syslogPort = 4445;
     private Storage storage;
     private SearchServer searchServer;
 
     public void setLog4jPort(int log4jPort) {
         this.log4jPort = log4jPort;
-    }
-
-    public void setSyslogPort(int syslogPort) {
-        this.syslogPort = syslogPort;
     }
 
     public void setStorage(Storage storage) {
@@ -38,40 +37,174 @@ public class Consumer {
     }
 
     public void startLog4j() {
-        Executor threadPool = Executors.newCachedThreadPool();
-        ChannelFactory factory = new NioServerSocketChannelFactory(threadPool, threadPool);
-        ServerBootstrap bootstrap = new ServerBootstrap(factory);
-        final ConsumerHandler consumerHandler = new ConsumerHandler(storage, searchServer);
-
-        bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-            public ChannelPipeline getPipeline() {
-                return Channels.pipeline(
-                        new LogEventDecoder(),
-                        consumerHandler);
-            }
-        });
-
-        bootstrap.setOption("child.keepAlive", true);
-        bootstrap.bind(new InetSocketAddress(log4jPort));
+        log4jEventsServer = new Log4jEventsServer(log4jPort, storage, searchServer);
+        log4jEventsServer.intitialize();
     }
 
-    public void startSyslog() {
-        ChannelFactory syslogChanelFactory =
-                new NioDatagramChannelFactory(
-                        Executors.newCachedThreadPool());
-
-        ConnectionlessBootstrap syslogServerBootstrap = new ConnectionlessBootstrap(syslogChanelFactory);
-
-        syslogServerBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-            public ChannelPipeline getPipeline() {
-                return Channels.pipeline(new SyslogServerHandler(storage, searchServer));
-            }
-        });
-        syslogServerBootstrap.setOption("child.keepAlive", true);
-        syslogServerBootstrap.bind(new InetSocketAddress(syslogPort));
+    public SyslogServer startSyslog(int port, final String regexp, final Map<String, Integer> groups) {
+        SyslogServer syslogServer = new SyslogServer(port, regexp, groups, storage, searchServer);
+        syslogServer.initialize();
+        return syslogServer;
     }
+
+    public void stopServers() {
+        for (int i : syslogServers.keySet()) {
+            SyslogServer syslogServer = syslogServers.get(i);
+            syslogServer.shutdown();
+        }
+        log4jEventsServer.shutdown();
+    }
+
     public void startServers() {
         startLog4j();
-        startSyslog();
+        try {
+            checkForConfFile();
+            Map<Integer, SyslogConf> syslogConfMap = readSyslogConf();
+            Set<Integer> portSet = syslogConfMap.keySet();
+            for (Integer port : portSet) {
+                syslogServers.put(port, startSyslog(port, syslogConfMap.get(port).getRegexp(), syslogConfMap.get(port).getGroupMap()));
+            }
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+
+        Timer tm = new Timer();
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                updateSyslogServers();
+            }
+        };
+        tm.schedule(timerTask, 10000, 10000);
+    }
+
+    public void updateSyslogServers() {
+        Map<Integer, SyslogConf> syslogConfMap = readSyslogConf();
+        if (syslogConfMap != null) {
+            Set<Integer> portSetInConf = syslogConfMap.keySet();
+            for (Integer port : portSetInConf) {
+                if (syslogServers.get(port) == null) {
+                    syslogServers.put(port, startSyslog(port, syslogConfMap.get(port).getRegexp(), syslogConfMap.get(port).getGroupMap()));
+                    logger.info("New UDP listener added on port" + port);
+                } else if (!syslogConfMap.get(port).getRegexp().equals(syslogServers.get(port).getRegexp()) ||
+                        !syslogConfMap.get(port).getGroupMap().equals(syslogServers.get(port).getGroups())) {
+                    syslogServers.get(port).shutdown();
+                    syslogServers.remove(port);
+                    syslogServers.put(port, startSyslog(port, syslogConfMap.get(port).getRegexp(), syslogConfMap.get(port).getGroupMap()));
+                    logger.info("UDP listener on port " + port + " reconfigured");
+                }
+            }
+            Iterator<Integer> it = syslogServers.keySet().iterator();
+            while (it.hasNext()) {
+                Integer port = it.next();
+                if (syslogConfMap.get(port) == null) {
+                    syslogServers.get(port).shutdown();
+                    it.remove();
+                    logger.info("UDP listener on port " + port + " removed");
+                }
+            }
+        }
+    }
+
+    private File getConfFile() {
+        String path = new File("").getAbsolutePath();
+        String fs = System.getProperty("file.separator");
+        String consumerConfPath = path + fs + "udpconf.xml";
+        return new File(consumerConfPath);
+    }
+
+    private void checkForConfFile() throws IOException {
+        File udpConfFile = getConfFile();
+        if (!udpConfFile.exists()) {
+            InputStream in = Consumer.class.getResourceAsStream(System.getProperty("file.separator") + "udpconf.xml");
+            OutputStream out = new FileOutputStream(udpConfFile);
+            int buf = in.read();
+            while (buf != -1) {
+                out.write(buf);
+                buf = in.read();
+            }
+            out.flush();
+            in.close();
+            out.close();
+        } else if (!udpConfFile.isFile()) {
+            throw new IOException("udpconf.xml exists and not a file");
+        }
+    }
+
+    private Map<Integer, SyslogConf> readSyslogConf() {
+        Map<Integer, SyslogConf> confMap = new HashMap<Integer, SyslogConf>();
+        File confFile = getConfFile();
+        if (lastCheckConfFile >= confFile.lastModified()) {
+            return null;
+        }
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = null;
+        Document doc = null;
+        try {
+            db = dbf.newDocumentBuilder();
+            doc = db.parse(confFile);
+        } catch (ParserConfigurationException e) {
+            logger.error(e.getMessage(), e);
+        } catch (SAXException e) {
+            logger.error(e.getMessage(), e);
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+        NodeList nodeLst = doc.getElementsByTagName("listener");
+        for (int s = 0; s < nodeLst.getLength(); s++) {
+
+            Node node = nodeLst.item(s);
+
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                SyslogConf conf = new SyslogConf();
+                int port = 0;
+                Map<String, Integer> groupMap = new HashMap<String, Integer>();
+
+                NodeList innerList = node.getChildNodes();
+                for (int i = 0; i < innerList.getLength(); i++) {
+                    Node innerNode = innerList.item(i);
+                    if (innerNode.getNodeName().equals("port")) {
+                        port = Integer.parseInt(innerNode.getTextContent());
+                    }
+                    if (innerNode.getNodeName().equals("regexp")) {
+                        conf.setRegexp(innerNode.getTextContent());
+                    }
+                    if (innerNode.getNodeName().equals("groups")) {
+                        NodeList groupsList = innerNode.getChildNodes();
+                        for (int k = 0; k < groupsList.getLength(); k++) {
+                            Node groupNode = groupsList.item(k);
+                            if (!groupNode.getNodeName().equals("#text")) {
+                                groupMap.put(groupNode.getNodeName(), Integer.parseInt(groupNode.getTextContent()));
+                            }
+                        }
+                        conf.setGroupMap(groupMap);
+                    }
+                }
+                confMap.put(port, conf);
+            }
+        }
+        lastCheckConfFile = confFile.lastModified();
+        return confMap;
+    }
+
+    class SyslogConf {
+        private String regexp;
+        private Map<String, Integer> groupMap;
+
+        public String getRegexp() {
+            return regexp;
+        }
+
+        public void setRegexp(String regexp) {
+            this.regexp = regexp;
+        }
+
+        public Map<String, Integer> getGroupMap() {
+            return groupMap;
+        }
+
+        public void setGroupMap(Map<String, Integer> groupMap) {
+            this.groupMap = groupMap;
+        }
     }
 }
