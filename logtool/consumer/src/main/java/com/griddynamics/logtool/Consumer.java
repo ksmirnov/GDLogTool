@@ -65,7 +65,7 @@ public class Consumer {
                 syslogServers.put(port, startSyslog(port, syslogConfMap.get(port).getRegexp(), syslogConfMap.get(port).getGroupMap()));
             }
         } catch (IOException e) {
-            logger.error("udpconf.xml exists and not a file");
+            logger.error(e.getMessage(), e);
         }
 
         Timer tm = new Timer();
@@ -106,14 +106,17 @@ public class Consumer {
         }
     }
 
-    private void checkForConfFile() throws IOException {
+    private File getConfFile() {
         String path = new File("").getAbsolutePath();
         String fs = System.getProperty("file.separator");
         String consumerConfPath = path + fs + "udpconf.xml";
-        File udpConfFile = new File(consumerConfPath);
+        return new File(consumerConfPath);
+    }
 
+    private void checkForConfFile() throws IOException {
+        File udpConfFile = getConfFile();
         if (!udpConfFile.exists()) {
-            InputStream in = Consumer.class.getResourceAsStream(fs + "udpconf.xml");
+            InputStream in = Consumer.class.getResourceAsStream(System.getProperty("file.separator") + "udpconf.xml");
             OutputStream out = new FileOutputStream(udpConfFile);
             int buf = in.read();
             while (buf != -1) {
@@ -130,8 +133,7 @@ public class Consumer {
 
     private Map<Integer, SyslogConf> readSyslogConf() {
         Map<Integer, SyslogConf> confMap = new HashMap<Integer, SyslogConf>();
-        String confPath = new File("").getAbsolutePath() + System.getProperty("file.separator") + "udpconf.xml";
-        File confFile = new File(confPath);
+        File confFile = getConfFile();
         if (lastCheckConfFile >= confFile.lastModified()) {
             return null;
         }
@@ -142,11 +144,11 @@ public class Consumer {
             db = dbf.newDocumentBuilder();
             doc = db.parse(confFile);
         } catch (ParserConfigurationException e) {
-            logger.error(e.getCause().getMessage(), e.getCause());
+            logger.error(e.getMessage(), e);
         } catch (SAXException e) {
-            logger.error(e.getCause().getMessage(), e.getCause());
+            logger.error(e.getMessage(), e);
         } catch (IOException e) {
-            logger.error(e.getCause().getMessage(), e.getCause());
+            logger.error(e.getMessage(), e);
         }
         NodeList nodeLst = doc.getElementsByTagName("listener");
         for (int s = 0; s < nodeLst.getLength(); s++) {
