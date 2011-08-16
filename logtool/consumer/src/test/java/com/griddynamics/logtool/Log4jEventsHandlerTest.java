@@ -19,7 +19,7 @@ import java.util.Map;
 import static org.mockito.Mockito.*;
 
 
-public class ConsumerHandlerTest {
+public class Log4jEventsHandlerTest {
 
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
     private final DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("HH:mm:ss");

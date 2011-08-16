@@ -1,12 +1,12 @@
 package com.griddynamics.logtool;
 
-import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -15,7 +15,7 @@ import java.util.*;
 
 public class Consumer {
     private static final Logger logger = LoggerFactory.getLogger(Log4jEventsHandler.class);
-    private Map<Integer, SyslogServer> syslogServers = new ConcurrentHashMap<Integer, SyslogServer>();
+    private Map<Integer, SyslogServer> syslogServers = new HashMap<Integer, SyslogServer>();
     Log4jEventsServer log4jEventsServer;
     private long lastCheckConfFile = 0;
 
@@ -41,16 +41,10 @@ public class Consumer {
         log4jEventsServer.intitialize();
     }
 
-    public void startSyslog(int port, final String regexp, final Map<String, Integer> groups) {
+    public SyslogServer startSyslog(int port, final String regexp, final Map<String, Integer> groups) {
         SyslogServer syslogServer = new SyslogServer(port, regexp, groups, storage, searchServer);
         syslogServer.initialize();
-        syslogServers.put(port, syslogServer);
-    }
-
-    public void stopSyslogServer(int port) {
-        SyslogServer syslogServer = syslogServers.get(port);
-        syslogServers.remove(port);
-        syslogServer.shutdown();
+        return syslogServer;
     }
 
     public void stopServers() {
@@ -65,77 +59,80 @@ public class Consumer {
         startLog4j();
         try {
             checkForConfFile();
-            Map <Integer, SyslogConf> syslogConfMap = readSyslogConf();
+            Map<Integer, SyslogConf> syslogConfMap = readSyslogConf();
             Set<Integer> portSet = syslogConfMap.keySet();
-            for(Integer port: portSet){
-                startSyslog(port ,syslogConfMap.get(port).getRegexp(),syslogConfMap.get(port).getGroupMap());
+            for (Integer port : portSet) {
+                syslogServers.put(port, startSyslog(port, syslogConfMap.get(port).getRegexp(), syslogConfMap.get(port).getGroupMap()));
             }
         } catch (IOException e) {
             logger.error("udpconf.xml exists and not a file");
         }
 
         Timer tm = new Timer();
-        TimerTask timerTask = new TimerTask(){
+        TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
                 updateSyslogServers();
             }
         };
-        tm.schedule(timerTask, 30000, 30000);
+        tm.schedule(timerTask, 10000, 10000);
     }
 
-    public void updateSyslogServers(){
-        Map <Integer, SyslogConf> syslogConfMap = readSyslogConf();
-        if(syslogConfMap != null){
+    public void updateSyslogServers() {
+        Map<Integer, SyslogConf> syslogConfMap = readSyslogConf();
+        if (syslogConfMap != null) {
             Set<Integer> portSetInConf = syslogConfMap.keySet();
-            for(Integer port : portSetInConf){
-                if(syslogServers.get(port) == null){
-                    startSyslog(port, syslogConfMap.get(port).getRegexp(), syslogConfMap.get(port).getGroupMap());
+            for (Integer port : portSetInConf) {
+                if (syslogServers.get(port) == null) {
+                    syslogServers.put(port, startSyslog(port, syslogConfMap.get(port).getRegexp(), syslogConfMap.get(port).getGroupMap()));
                     logger.info("New UDP listener added on port" + port);
-                } else if(!syslogConfMap.get(port).getRegexp().equals(syslogServers.get(port).getRegexp()) ||
-                        !syslogConfMap.get(port).getGroupMap().equals(syslogServers.get(port).getGroups())){
-                    stopSyslogServer(port);
-                    startSyslog(port, syslogConfMap.get(port).getRegexp(), syslogConfMap.get(port).getGroupMap());
+                } else if (!syslogConfMap.get(port).getRegexp().equals(syslogServers.get(port).getRegexp()) ||
+                        !syslogConfMap.get(port).getGroupMap().equals(syslogServers.get(port).getGroups())) {
+                    syslogServers.get(port).shutdown();
+                    syslogServers.remove(port);
+                    syslogServers.put(port, startSyslog(port, syslogConfMap.get(port).getRegexp(), syslogConfMap.get(port).getGroupMap()));
                     logger.info("UDP listener on port " + port + " reconfigured");
                 }
             }
-            Set<Integer> portsWorking = syslogServers.keySet();
-            for(Integer port : portsWorking){
-                if(syslogConfMap.get(port) == null){
-                    stopSyslogServer(port);
+            Iterator<Integer> it = syslogServers.keySet().iterator();
+            while (it.hasNext()) {
+                Integer port = it.next();
+                if (syslogConfMap.get(port) == null) {
+                    syslogServers.get(port).shutdown();
+                    it.remove();
                     logger.info("UDP listener on port " + port + " removed");
                 }
             }
         }
     }
 
-    private void checkForConfFile() throws IOException{
+    private void checkForConfFile() throws IOException {
         String path = new File("").getAbsolutePath();
         String fs = System.getProperty("file.separator");
         String consumerConfPath = path + fs + "udpconf.xml";
         File udpConfFile = new File(consumerConfPath);
 
-        if(!udpConfFile.exists()){
+        if (!udpConfFile.exists()) {
             InputStream in = Consumer.class.getResourceAsStream(fs + "udpconf.xml");
             OutputStream out = new FileOutputStream(udpConfFile);
             int buf = in.read();
-            while(buf != -1){
+            while (buf != -1) {
                 out.write(buf);
                 buf = in.read();
             }
             out.flush();
             in.close();
             out.close();
-        } else if(!udpConfFile.isFile()){
+        } else if (!udpConfFile.isFile()) {
             throw new IOException("udpconf.xml exists and not a file");
         }
     }
 
     private Map<Integer, SyslogConf> readSyslogConf() {
-        Map<Integer ,SyslogConf> confMap = new HashMap<Integer, SyslogConf>();
-        String confPath = new File("").getAbsolutePath() +System.getProperty("file.separator") + "udpconf.xml";
+        Map<Integer, SyslogConf> confMap = new HashMap<Integer, SyslogConf>();
+        String confPath = new File("").getAbsolutePath() + System.getProperty("file.separator") + "udpconf.xml";
         File confFile = new File(confPath);
-        if(lastCheckConfFile >= confFile.lastModified()){
+        if (lastCheckConfFile >= confFile.lastModified()) {
             return null;
         }
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -181,7 +178,7 @@ public class Consumer {
                         conf.setGroupMap(groupMap);
                     }
                 }
-                confMap.put(port,conf);
+                confMap.put(port, conf);
             }
         }
         lastCheckConfFile = confFile.lastModified();
@@ -189,7 +186,6 @@ public class Consumer {
     }
 
     class SyslogConf {
-        private int port;
         private String regexp;
         private Map<String, Integer> groupMap;
 
