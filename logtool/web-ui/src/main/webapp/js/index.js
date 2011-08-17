@@ -853,6 +853,9 @@ Ext.onReady(function() {
     });
 
     function writeText(pathToLog) {
+        if (selectedFilePath == "" || searchRunning) {
+            return;
+        }
         var prevViewed = partViewed;
         if (pathToLog == 'prev') {
             pathToLog = selectedFilePath;
