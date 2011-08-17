@@ -43,9 +43,9 @@ public class Searcher {
                 byte[] buf = new byte[actualPageSize];
 
                 StringBuffer sb = new StringBuffer(path + "||<>||");
-                sb.append(app.get("application")).append(" / ");
-                sb.append(app.get("host")).append(" / ");
-                sb.append(app.get("instance")).append(" / ");
+                sb.append(app.get("application")).append("/");
+                sb.append(app.get("host")).append("/");
+                sb.append(app.get("instance")).append("/");
                 sb.append(app.get("date"));
                 sb.append(" (").append(startPos).append(", ").append(length).append(")");
 
@@ -79,31 +79,33 @@ public class Searcher {
 
     public Map<String, Map<Integer, List<Integer>>> doSearchNew(String path) throws IOException {
         File dir = new File(path);
-        if (dir.isDirectory()) {
-            File[] subdirs = dir.listFiles();
-            for (File subdir : subdirs) {
-                doSearchNew(subdir.getAbsolutePath());
-            }
-        } else {
-            RandomAccessFile rafLog = null;
-            rafLog = new RandomAccessFile(dir.getAbsolutePath(), "r");
-            byte[] buf = new byte[actualPageSize];
-            long parts = rafLog.length() / pageSize;
-            for (int i = 1; i < parts + 2; i++) {
-                rafLog.seek((i - 1) * pageSize);
-                String chunk = null;
-                int bytesRead = rafLog.read(buf);
-                if (bytesRead == actualPageSize) {
-                    chunk = new String(buf);
-                } else {
-                    byte[] buff = new byte[bytesRead];
-                    rafLog.seek((i - 1) * pageSize);
-                    rafLog.read(buff);
-                    chunk = new String(buff);
+        if (dir.exists()) {
+            if (dir.isDirectory()) {
+                File[] subdirs = dir.listFiles();
+                for (File subdir : subdirs) {
+                    doSearchNew(subdir.getAbsolutePath());
                 }
-                inStringSearch(chunk, i, actualPageSize, dir.getAbsolutePath());
+            } else {
+                RandomAccessFile rafLog = null;
+                rafLog = new RandomAccessFile(dir.getAbsolutePath(), "r");
+                byte[] buf = new byte[actualPageSize];
+                long parts = rafLog.length() / pageSize;
+                for (int i = 1; i < parts + 2; i++) {
+                    rafLog.seek((i - 1) * pageSize);
+                    String chunk = null;
+                    int bytesRead = rafLog.read(buf);
+                    if (bytesRead == actualPageSize) {
+                        chunk = new String(buf);
+                    } else {
+                        byte[] buff = new byte[bytesRead];
+                        rafLog.seek((i - 1) * pageSize);
+                        rafLog.read(buff);
+                        chunk = new String(buff);
+                    }
+                    inStringSearch(chunk, i, actualPageSize, dir.getAbsolutePath());
+                }
+                rafLog.close();
             }
-            rafLog.close();
         }
 
         return results;
