@@ -169,4 +169,10 @@ public interface Storage {
      * @throws IOException - Throws IOException if has some problems with input
      */
     void getLogNew(String[] path, String name, long startPos, int length, OutputStream outputStream) throws IOException;
+
+    /**
+     * Thsi method returns paths to all currently wiped files.
+     * @return - Paths of all currently wiped files represented as set
+     */
+    Set<String> getWipedFiles();
 }

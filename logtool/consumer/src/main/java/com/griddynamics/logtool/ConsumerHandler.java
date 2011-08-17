@@ -67,6 +67,14 @@ public class ConsumerHandler extends SimpleChannelHandler {
             doc.put("time", timeFormatter.print(loggingEvent.timeStamp));
             doc.put("level", loggingEvent.getLevel().toString());
             doc.put("port", port);
+
+            Set<String> wipedFiles = storage.getWipedFiles();
+            if (!wipedFiles.isEmpty()) {
+                for (String logPath : wipedFiles) {
+                    searchServer.delete("path:" + logPath);
+                }
+            }
+
             searchServer.index(doc);
         } else {
             throw new IllegalArgumentException("argument is not instance of LoggingEvent");
