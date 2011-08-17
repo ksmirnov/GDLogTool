@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 
 public class SyslogServerHandler extends SimpleChannelHandler {
@@ -50,13 +51,21 @@ public class SyslogServerHandler extends SimpleChannelHandler {
         Map<String,String> msg = messageParser.parseMessage(receivedMessage.toString());
 
         if(msg.get("content") == null){
-            msg.put("content",receivedMessage.toString());
+            msg.put("content", receivedMessage.toString());
         }
         String [] path = new String[3];
         path[0] = msg.get("application");
         path[1] = host;
         path[2] = msg.get("instance");
-        msg.putAll(storage.addMessage(path, msg.get("date"),msg.get("content")));
+        msg.putAll(storage.addMessage(path, msg.get("date"), msg.get("content")));
+
+        Set<String> wipedFiles = storage.getWipedFiles();
+        if (!wipedFiles.isEmpty()) {
+            for (String logPath : wipedFiles) {
+                searchServer.delete("path:" + logPath);
+            }
+        }
+
         searchServer.index(msg);
     }
 
