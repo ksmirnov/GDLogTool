@@ -2,6 +2,8 @@ package com.griddynamics.logtool;
 
 import org.apache.log4j.spi.LoggingEvent;
 
+import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.group.ChannelGroup;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -9,17 +11,11 @@ import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-
 import java.net.InetSocketAddress;
 import java.util.*;
 
-public class ConsumerHandler extends SimpleChannelHandler {
-    private static final Logger logger = LoggerFactory.getLogger(ConsumerHandler.class);
+public class Log4jEventsHandler extends SimpleChannelHandler {
+    private static final Logger logger = LoggerFactory.getLogger(Log4jEventsHandler.class);
 
     private static final String DELIM = ".";
 
@@ -28,10 +24,12 @@ public class ConsumerHandler extends SimpleChannelHandler {
     private final DateTimeFormatter dateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
     private final Storage storage;
     private final SearchServer searchServer;
+    private ChannelGroup allChannels;
 
-    public ConsumerHandler(Storage storage, SearchServer searchServer) {
+    public Log4jEventsHandler(Storage storage, SearchServer searchServer, ChannelGroup allChannels) {
         this.storage = storage;
         this.searchServer = searchServer;
+        this.allChannels = allChannels;
     }
 
     /**
@@ -120,5 +118,10 @@ public class ConsumerHandler extends SimpleChannelHandler {
 
         Channel ch = e.getChannel();
         ch.close();
+    }
+    
+    @Override
+    public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+        allChannels.add(e.getChannel());
     }
 }

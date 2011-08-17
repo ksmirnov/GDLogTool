@@ -31,18 +31,20 @@ public class SshTailer {
         SshTailer sshTailer = new SshTailer();
         String hostToSend = props.getProperty("hostToSend");
         int portToSend = Integer.parseInt(props.getProperty("portToSend"));
-        sshTailer.addHostForWatching(props.getProperty("hostToReadFrom"), props.getProperty("filesToReadFrom"),
+        sshTailer.addHostForWatching(props.getProperty("hostToReadFrom"),
+                props.getProperty("filesToReadFrom"),props.getProperty("userToReadFrom"),
                 hostToSend, portToSend);
         int i = 1;
         while (props.getProperty("hostToReadFrom" + i) != null) {
-            sshTailer.addHostForWatching(props.getProperty("hostToReadFrom" + i), props.getProperty("filesToReadFrom" + i),
+            sshTailer.addHostForWatching(props.getProperty("hostToReadFrom" + i),
+                    props.getProperty("filesToReadFrom" + i), props.getProperty("userToReadFrom" + i), 
                     hostToSend, portToSend);
             i++;
         }
     }
 
-    public void addHostForWatching(String hostToReadFrom, String filesToRead, String hostToSend, int portToSend) {
-        WatchingSsh watchingSsh = new WatchingSsh(hostToReadFrom, filesToRead, hostToSend, portToSend);
+    public void addHostForWatching(String hostToReadFrom, String filesToRead, String userToReadFrom, String hostToSend, int portToSend) {
+        WatchingSsh watchingSsh = new WatchingSsh(hostToReadFrom, filesToRead, userToReadFrom, hostToSend, portToSend);
         Thread t = new Thread(watchingSsh);
         activeWatchingHosts.put(hostToReadFrom, t);
         t.start();
@@ -63,14 +65,16 @@ class WatchingSsh implements Runnable {
     UDPSendler sendler;
     String host;
     String files;
+    String user;
     boolean singleFile;
     String header;
     List<Pattern> patternList = new ArrayList<Pattern>();
     Pattern headerPatter = Pattern.compile("==> (.+) <==");
 
-    public WatchingSsh(String hostToReadFrom, String filesToRead, String hostToSend, int portToSend) {
+    public WatchingSsh(String hostToReadFrom, String filesToRead,String userToReadFrom, String hostToSend, int portToSend) {
         sendler = new UDPSendler(hostToSend, portToSend);
         this.host = hostToReadFrom;
+        this.user = userToReadFrom;
         this.files = filesToRead;
         if (filesToRead.indexOf("*") == -1 && filesToRead.indexOf(" ") == -1) {
             singleFile = true;
@@ -140,7 +144,7 @@ class WatchingSsh implements Runnable {
             ssh.loadKnownHosts();
             ssh.connect(host);
             try {
-                ssh.authPublickey(System.getProperty("user.name"));
+                ssh.authPublickey(user);
                 final Session session = ssh.startSession();
                 try {
                     final Command cmd = session.exec("tail -F " + files);
