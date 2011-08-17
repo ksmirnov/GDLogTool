@@ -856,20 +856,21 @@ Ext.onReady(function() {
         if (selectedFilePath == "" || searchRunning) {
             return;
         }
-        var prevViewed = partViewed;
+
         if (pathToLog == 'prev') {
+            lastPage = false;
             pathToLog = selectedFilePath;
             if (partViewed >= lineForPage) {
                 partViewed = partViewed - lineForPage;
-                lastPage = false;
             } else {
                 partViewed = 0;
             }
         }
+
         if (pathToLog == 'next') {
             pathToLog = selectedFilePath;
             if (lastPage) {
-                partViewid = -1;
+                partViewed = -1;
             } else {
                 partViewed = partViewed + lineForPage;
             }
@@ -889,10 +890,9 @@ Ext.onReady(function() {
                 eval(res);
                 var countLogs = parseInt(response.total);
                 partViewed = parseInt(response.partViewed);
-                if (partViewed >= countLogs - lineForPage)
-                    {
+                if (partViewed >= countLogs - lineForPage) {
                     lastPage = true;
-                    }
+                }
                 document.getElementById('div2').innerHTML =
                                 (' Page viewed ' + parseInt(Math.ceil(partViewed/lineForPage)) +
                                 ' from ' + parseInt(Math.floor(countLogs/

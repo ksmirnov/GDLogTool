@@ -228,8 +228,12 @@ public class FileStorage implements Storage {
             return null;
         } finally {
             try {
-                fileWriter.flush();
-                fileWriter.close();
+                if (fileWriter != null) {
+                    fileWriter.flush();
+                    fileWriter.close();
+                } else {
+                    return null;
+                }
             } catch (IOException ex) {
                 logger.error("Tried to close file: " + fullFileName, ex);
                 return null;
