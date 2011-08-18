@@ -479,7 +479,7 @@ Ext.onReady(function() {
                         var appspec = solrSearchOccurrences[index].application + ' / ' +
                                 solrSearchOccurrences[index].host + ' / ' +
                                 solrSearchOccurrences[index].instance + ' / ' +
-                                solrSearchOccurrences[index].date +
+                                solrSearchOccurrences[index].timestamp +
                                 '    (' + solrSearchOccurrences[index].startIndex + ', ' + solrSearchOccurrences[index].length + ')';
                         var msg = response.log + ' ...';
                         searchGridStore.add({

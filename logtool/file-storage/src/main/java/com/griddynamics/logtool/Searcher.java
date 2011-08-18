@@ -46,7 +46,7 @@ public class Searcher {
                 sb.append(app.get("application")).append(" / ");
                 sb.append(app.get("host")).append(" / ");
                 sb.append(app.get("instance")).append(" / ");
-                sb.append(app.get("date"));
+                sb.append(app.get("timestamp"));
                 sb.append(" (").append(startPos).append(", ").append(length).append(")");
 
                 try {

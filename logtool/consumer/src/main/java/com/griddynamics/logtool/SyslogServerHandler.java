@@ -56,7 +56,7 @@ public class SyslogServerHandler extends SimpleChannelHandler {
         path[0] = msg.get("application");
         path[1] = host;
         path[2] = msg.get("instance");
-        msg.putAll(storage.addMessage(path, msg.get("date"),msg.get("content")));
+        msg.putAll(storage.addMessage(path, msg.get("timestamp"),msg.get("content")));
         searchServer.index(msg);
     }
 

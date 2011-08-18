@@ -16,7 +16,6 @@
 
     <mainIndex>
         <reopenReaders>true</reopenReaders>
-        <infoStream file="INFOSTREAM.txt">true</infoStream>
     </mainIndex>
 
     <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>

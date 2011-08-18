@@ -13,7 +13,9 @@ import org.joda.time.format.DateTimeFormatter;
 import org.junit.*;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Mockito.*;
@@ -23,7 +25,7 @@ public class Log4jEventsHandlerTest {
 
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
     private final DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("HH:mm:ss");
-    private final DateTimeFormatter dateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final DateTimeFormatter indexFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     private Storage mockedStorage;
     private SearchServer mockedSearch;
@@ -49,6 +51,8 @@ public class Log4jEventsHandlerTest {
         Category logger = mock(Category.class);
         LoggingEvent testEvent = new LoggingEvent(null, logger, datetime, Level.INFO, message, null);
         testEvent.setProperty("application", "testApp.testInstance");
+        List testEventsList = new ArrayList();
+        testEventsList.add(testEvent);
 
         InetSocketAddress testAddress = new InetSocketAddress("testhost", 4444);
 
@@ -59,7 +63,7 @@ public class Log4jEventsHandlerTest {
 
         MessageEvent testMessage = mock(MessageEvent.class);
         when(testMessage.getRemoteAddress()).thenReturn(testAddress);
-        when(testMessage.getMessage()).thenReturn(testEvent);
+        when(testMessage.getMessage()).thenReturn(testEventsList);
 
         testHandler.messageReceived(testCtx, testMessage);
 
@@ -75,8 +79,7 @@ public class Log4jEventsHandlerTest {
         mapToVerify.put("host", pathToVerify[1]);
         mapToVerify.put("instance", pathToVerify[2]);
         mapToVerify.put("content", message);
-        mapToVerify.put("date", dateFormatter.print(datetime));
-        mapToVerify.put("time", timeFormatter.print(datetime));
+        mapToVerify.put("timestamp", indexFormatter.print(datetime));
         mapToVerify.put("level", Level.INFO.toString());
         mapToVerify.put("port", "4444");
         verify(mockedSearch).index(mapToVerify);
