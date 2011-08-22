@@ -14,7 +14,7 @@ public class MessageParser {
     private static final String ABSOLUTE="[0-2][0-9]:[0-5][0-9]:[0-5][0-9],[0-9]{3}";
     private static final Pattern ISO8601DatePattern = Pattern.compile("(" + ISO8601Date+ ") " + ABSOLUTE);
     private static final Pattern DATEDatePattern = Pattern.compile("(" + DATEDate+ ") " + ABSOLUTE);
-    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     private static final DateTimeFormatter isoFmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss,SSS");
     private static final DateTimeFormatter dateFmt = DateTimeFormat.forPattern("dd MMM yyyy HH:mm:ss,SSS");
@@ -35,7 +35,7 @@ public class MessageParser {
         Matcher m = parsePattern.matcher(incoming);
         if(m.matches()){
             for(String s: groups.keySet()){
-                if(s.equals("date")){
+                if(s.equals("timestamp")){
                 parsedIndexes.put(s,parseDate(m.group(groups.get(s))));
                 }else{
                     parsedIndexes.put(s,m.group(groups.get(s)));

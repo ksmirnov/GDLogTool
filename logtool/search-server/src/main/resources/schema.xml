@@ -2,24 +2,35 @@
 
 <schema name="logtool field schema">
     <types>
-        <fieldtype name="string"  class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+        <fieldtype name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+        <fieldType name="text" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
+            <analyzer type="index">
+                <tokenizer class="solr.StandardTokenizerFactory" />
+            </analyzer>
+            <analyzer type="query">
+                <tokenizer class="solr.StandardTokenizerFactory" />
+            </analyzer>
+        </fieldType>
+        <fieldtype name="date" class="solr.DateField" sortMissingLast="true" omitNorms="true"/>
+        <fieldType name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true"/>
     </types>
 
     <fields>
         <field name="path"        type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
         <field name="startIndex"  type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
         <field name="length"      type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
-        <field name="content"     type="string"   indexed="true"  stored="true"  multiValued="false" required="true" />
+        <field name="content"     type="text"     indexed="true"  stored="true"  multiValued="false" required="true" />
         <field name="host"        type="string"   indexed="true"  stored="true"  multiValued="false" />
         <field name="application" type="string"   indexed="true"  stored="true"  multiValued="false" />
         <field name="instance"    type="string"   indexed="true"  stored="true"  multiValued="false" />
         <field name="level"       type="string"   indexed="true"  stored="true"  multiValued="false" />
-        <field name="date"        type="string"   indexed="true"  stored="true"  multiValued="false" />
-        <field name="time"        type="string"   indexed="true"  stored="true"  multiValued="false" />
-        <field name="port"        type="string"   indexed="true"  stored="true"  multiValued="false" />
+        <field name="timestamp"   type="date"     indexed="true"  stored="true"  multiValued="false" />
+        <field name="port"        type="sint"     indexed="true"  stored="true"  multiValued="false" />
+        <dynamicField name="*"    type="string"   indexed="true"  stored="true"  multiValued="true"  />
     </fields>
 
     <solrQueryParser defaultOperator="AND"/>
+    <defaultSearchField>content</defaultSearchField>
 
 </schema>
 

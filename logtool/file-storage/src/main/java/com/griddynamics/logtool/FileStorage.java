@@ -2,7 +2,6 @@ package com.griddynamics.logtool;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
-import static org.apache.commons.lang.StringUtils.removeStart;
 
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
@@ -40,7 +39,6 @@ public class FileStorage implements Storage {
     private int bufferSize;
     private List<DateTime> dates = new ArrayList<DateTime>();
     private Map<String, FileChannel> openFiles = new HashMap<String, FileChannel>();
-    private Set<String> wipedFiles = new HashSet<String>();
 
     private Lock subscribersLock = new ReentrantLock(true);
     private Lock alertsLock = new ReentrantLock(true);
@@ -194,66 +192,55 @@ public class FileStorage implements Storage {
     }
 
     @Override
-    public Set<String> getWipedFiles() {
-        Set<String> res = wipedFiles;
-        wipedFiles = new HashSet<String>();
-        return res;
-    }
+        public synchronized Map<String, String> addMessage(String[] path, String timestamp, String message) {
+            if (needToWipe()) {
+                //sendNotification("Storage quota reached.", quotaAlertSubscribers);
+                wipe();
+            }
 
-    @Override
-    public synchronized Map<String, String> addMessage(String[] path, String timestamp, String message) {
-        if (needToWipe()) {
-            //sendNotification("Storage quota reached.", quotaAlertSubscribers);
-            wipe();
-        }
+            String[] clearPath = removeNullAndEmptyPathSegments(path);
 
-        String[] clearPath = removeNullAndEmptyPathSegments(path);
-
-        String logPath = buildPath(clearPath);
-        File dir = new File(logPath);
-        if (dir.mkdirs()) {
-            lastUpdateTime = System.currentTimeMillis();
-        }
-        String fileName = constructFileName(timestamp);
-        String fullFileName = addToPath(logPath, fileName);
-        FileWriter fileWriter = null;
-        File log = new File(fullFileName);
-        long size = log.length();
-        try {
-            fileWriter = new FileWriter(fullFileName, true);
-            fileWriter.append(message);
-            fileWriter.append("\n");
-        } catch (IOException ex) {
-            logger.error("Tried to append message to: " + fullFileName, ex);
-            return null;
-        } finally {
+            String logPath = buildPath(clearPath);
+            File dir = new File(logPath);
+            if (dir.mkdirs()) {
+                lastUpdateTime = System.currentTimeMillis();
+            }
+            String fileName = constructFileName(timestamp);
+            String fullFileName = addToPath(logPath, fileName);
+            FileWriter fileWriter = null;
+            File log = new File(fullFileName);
+            long size = log.length();
             try {
-                if (fileWriter != null) {
+                fileWriter = new FileWriter(fullFileName, true);
+                fileWriter.append(message);
+                fileWriter.append("\n");
+            } catch (IOException ex) {
+                logger.error("Tried to append message to: " + fullFileName, ex);
+                return null;
+            } finally {
+                try {
                     fileWriter.flush();
                     fileWriter.close();
-                } else {
+                } catch (IOException ex) {
+                    logger.error("Tried to close file: " + fullFileName, ex);
                     return null;
                 }
-            } catch (IOException ex) {
-                logger.error("Tried to close file: " + fullFileName, ex);
-                return null;
             }
+
+            addDate(fileName);
+
+            addToFileSystem(fileSystem, clearPath);
+
+            curFolderSize += (log.length() - size);
+
+            checkForAlerts(message, fullFileName, timestamp);
+
+            Map<String, String> out = new HashMap<String, String>();
+            out.put("path", fullFileName);
+            out.put("startIndex", String.valueOf(size));
+            out.put("length", String.valueOf((log.length() - size)));
+            return out;
         }
-
-        addDate(fileName);
-
-        addToFileSystem(fileSystem, clearPath);
-
-        curFolderSize += (log.length() - size);
-
-        checkForAlerts(message, fullFileName, timestamp);
-
-        Map<String, String> out = new HashMap<String, String>();
-        out.put("path", fullFileName);
-        out.put("startIndex", String.valueOf(size));
-        out.put("length", String.valueOf((log.length() - size)));
-        return out;
-    }
     
 
     @Override
@@ -366,7 +353,7 @@ public class FileStorage implements Storage {
         String logPath = buildPath(clearPath);
 
         for (String log : openFiles.keySet()) {
-            if (log.contains(logPath)) {
+            if (log.indexOf(logPath) == 0) {
                 try {
                     openFiles.get(log).close();
                     openFiles.remove(log);
@@ -512,7 +499,7 @@ public class FileStorage implements Storage {
     }
 
     private void wipe() {
-        if (dates.size() > 0 && !wipe(new String[0])) {
+        if (!wipe(new String[0])) {
             dates.remove(0);
             wipe();
         }
@@ -525,11 +512,9 @@ public class FileStorage implements Storage {
         File defaultLog = new File(addToPath(curPath, "default.log"));
         if (defaultLog.exists()) {
             deleteLog(path, "default.log");
-            wipedFiles.add(addToPath(curPath, "default.log"));
         }
         if (needToWipeRec() && log.exists()) {
             deleteLog(path, fileName);
-            wipedFiles.add(addToPath(curPath, fileName));
         }
         if (needToWipeRec()) {
             File folder = new File(curPath);

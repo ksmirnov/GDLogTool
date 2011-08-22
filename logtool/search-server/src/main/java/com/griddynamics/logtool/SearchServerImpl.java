@@ -77,7 +77,7 @@ public class SearchServerImpl implements SearchServer {
             for(SolrDocument doc : docs) {
                 Map<String, String> entry = new HashMap<String, String>();
                 for(String name : doc.getFieldNames()) {
-                    entry.put(name, (String) doc.getFieldValue(name));
+                    entry.put(name, doc.getFieldValue(name).toString());
                 }
                 out.add(entry);
             }

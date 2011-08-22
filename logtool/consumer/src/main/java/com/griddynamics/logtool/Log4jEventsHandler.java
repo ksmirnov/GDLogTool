@@ -21,7 +21,7 @@ public class Log4jEventsHandler extends SimpleChannelHandler {
 
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
     private final DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("HH:mm:ss");
-    private final DateTimeFormatter dateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final DateTimeFormatter indexFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private final Storage storage;
     private final SearchServer searchServer;
     private ChannelGroup allChannels;
@@ -48,34 +48,32 @@ public class Log4jEventsHandler extends SimpleChannelHandler {
         if(ctx.getChannel().getLocalAddress() instanceof InetSocketAddress) {
             port = String.valueOf(((InetSocketAddress) ctx.getChannel().getLocalAddress()).getPort());
         }
-        if(e.getMessage() instanceof LoggingEvent) {
-            LoggingEvent loggingEvent = (LoggingEvent) e.getMessage();
-            String message = timeFormatter.print(loggingEvent.timeStamp) + " " + loggingEvent.getMessage().toString();
-            DateTime date = new DateTime(loggingEvent.timeStamp);
-            String timestamp = date.toString(dateTimeFormatter);
-            Map<String, String> doc = new LinkedHashMap<String, String>();
-            doc.put("application", getApplication(loggingEvent));
-            doc.put("host", host);
-            doc.put("instance", getInstance(loggingEvent));
-            String[] path = new String[doc.size()];
-            doc.values().toArray(path);
-            doc.putAll(storage.addMessage(path, timestamp, message));
-            doc.put("content", message);
-            doc.put("date", dateFormatter.print(loggingEvent.timeStamp));
-            doc.put("time", timeFormatter.print(loggingEvent.timeStamp));
-            doc.put("level", loggingEvent.getLevel().toString());
-            doc.put("port", port);
 
-            Set<String> wipedFiles = storage.getWipedFiles();
-            if (!wipedFiles.isEmpty()) {
-                for (String logPath : wipedFiles) {
-                    searchServer.delete("path:" + logPath);
+        if(e.getMessage() instanceof List) {
+            for(Object o: (List) e.getMessage()) {
+                if(o instanceof LoggingEvent) {
+                    LoggingEvent loggingEvent = (LoggingEvent) o;
+                    String message = timeFormatter.print(loggingEvent.timeStamp) + " " + loggingEvent.getMessage().toString();
+                    DateTime date = new DateTime(loggingEvent.timeStamp);
+                    String timestamp = date.toString(dateTimeFormatter);
+                    Map<String, String> doc = new LinkedHashMap<String, String>();
+                    doc.put("application", getApplication(loggingEvent));
+                    doc.put("host", host);
+                    doc.put("instance", getInstance(loggingEvent));
+                    String[] path = new String[doc.size()];
+                    doc.values().toArray(path);
+                    doc.putAll(storage.addMessage(path, timestamp, message));
+                    doc.put("content", message);
+                    doc.put("timestamp", indexFormatter.print(loggingEvent.timeStamp));
+                    doc.put("level", loggingEvent.getLevel().toString());
+                    doc.put("port", port);
+                    searchServer.index(doc);
+                } else {
+                    throw new IllegalArgumentException("Recieved message contains not wrong data");
                 }
             }
-
-            searchServer.index(doc);
         } else {
-            throw new IllegalArgumentException("argument is not instance of LoggingEvent");
+            throw new IllegalArgumentException("Recieved message must be of type List");
         }
     }
 

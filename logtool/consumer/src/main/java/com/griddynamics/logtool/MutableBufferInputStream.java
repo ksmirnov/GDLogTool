@@ -15,9 +15,12 @@ public class MutableBufferInputStream extends InputStream {
         this.buffer = buffer;
     }
 
-    void updateBuffer(ChannelBuffer buffer) {
+    boolean updateBuffer(ChannelBuffer buffer) {
         if(this.buffer != buffer) {
             this.buffer = buffer;
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -61,5 +64,14 @@ public class MutableBufferInputStream extends InputStream {
         } else {
             buffer.readerIndex(mark);
         }
+    }
+
+    @Override
+    public int available() throws IOException {
+        return buffer.readableBytes();
+    }
+
+    public int readInt() throws IndexOutOfBoundsException {
+        return buffer.readInt();
     }
 }
