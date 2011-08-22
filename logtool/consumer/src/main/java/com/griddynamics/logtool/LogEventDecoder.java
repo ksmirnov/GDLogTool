@@ -97,21 +97,13 @@ public class LogEventDecoder extends FrameDecoder {
                     ois.close();
                     bufferStream.reset();
                     bufferStream.updateBuffer(buffer.slice());
-                    try {
-                        ois = new ObjectInputStream(bufferStream);
-                    } catch (IOException ex) {
-                        throw ex;
-                    }
+                    ois = new ObjectInputStream(bufferStream);
                     bufferStream.mark(0);
-                } else if(e.getStackTrace()[0].getMethodName().equals("refill")) {
+                } else if(e.getMessage().indexOf("EOF") > 0) {
                     ois.close();
                     initBuffer.readerIndex(0);
                     bufferStream.updateBuffer(initBuffer);
-                    try {
-                        ois = new ObjectInputStream(bufferStream);
-                    } catch (IOException ex) {
-                        throw ex;
-                    }
+                    ois = new ObjectInputStream(bufferStream);
                     bufferStream.updateBuffer(buffer);
                     bufferStream.reset();
                 } else {

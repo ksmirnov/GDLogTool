@@ -7,6 +7,11 @@ import java.io.IOException;
 public abstract class Action {
     public Storage storage;
     public SearchServer searchServer;
+    public Consumer consumer;
+
+    public void setConsumer(Consumer consumer) {
+        this.consumer = consumer;
+    }
 
     public void setStorage(Storage storage){
         this.storage = storage;

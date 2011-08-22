@@ -13,13 +13,22 @@ import java.util.concurrent.Executors;
 
 public class Log4jEventsServer {
     private int port;
-    private final Log4jEventsHandler log4jEventsHandler;
+    private final SimpleChannelHandler channelHandler;
     private final ChannelGroup allChannels = new DefaultChannelGroup("log4j-server");
     private int bindChannelId;
 
-    public Log4jEventsServer(int port, Storage storage, SearchServer searchServer) {
-        log4jEventsHandler = new Log4jEventsHandler(storage, searchServer, allChannels);
+    public Log4jEventsServer(int port, Storage storage, SearchServer searchServer, boolean testMode) {
+        SimpleChannelHandler channelHandler = new Log4jEventsHandler(storage, searchServer, allChannels);
+        if(testMode) {
+            this.channelHandler = new HandlerMonitor(channelHandler);
+        } else {
+            this.channelHandler = channelHandler;
+        }
         this.port = port;
+    }
+
+    public ChannelHandler getHandler() {
+        return channelHandler;
     }
 
     public void intitialize() {
@@ -31,7 +40,7 @@ public class Log4jEventsServer {
             public ChannelPipeline getPipeline() {
                 return Channels.pipeline(
                         new LogEventDecoder(),
-                        log4jEventsHandler);
+                        channelHandler);
             }
         });
 

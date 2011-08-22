@@ -1,5 +1,7 @@
 package com.griddynamics.logtool;
 
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -23,6 +25,7 @@ public class Consumer {
     private int log4jPort = 4444;
     private Storage storage;
     private SearchServer searchServer;
+    private boolean testMode = false;
 
     public void setLog4jPort(int log4jPort) {
         this.log4jPort = log4jPort;
@@ -36,13 +39,21 @@ public class Consumer {
         this.searchServer = searchServer;
     }
 
+    public void setTestMode(boolean testMode) {
+        this.testMode = testMode;
+    }
+
+    public boolean getTestMode() {
+        return testMode;
+    }
+
     public void startLog4j() {
-        log4jEventsServer = new Log4jEventsServer(log4jPort, storage, searchServer);
+        log4jEventsServer = new Log4jEventsServer(log4jPort, storage, searchServer, testMode);
         log4jEventsServer.intitialize();
     }
 
     public SyslogServer startSyslog(int port, final String regexp, final Map<String, Integer> groups) {
-        SyslogServer syslogServer = new SyslogServer(port, regexp, groups, storage, searchServer);
+        SyslogServer syslogServer = new SyslogServer(port, regexp, groups, storage, searchServer, testMode);
         syslogServer.initialize();
         return syslogServer;
     }
@@ -185,6 +196,29 @@ public class Consumer {
         }
         lastCheckConfFile = confFile.lastModified();
         return confMap;
+    }
+
+    public Map<String, ChannelPerformance> getPerformance() {
+        Map<String, ChannelPerformance> out = null;
+        if(testMode) {
+            out = new HashMap<String, ChannelPerformance>();
+            for (SyslogServer ss : syslogServers.values()) {
+                HandlerMonitor monitor = (HandlerMonitor) ss.getHandler();
+                out.putAll(monitor.getPerformance());
+            }
+            out.putAll(((HandlerMonitor) log4jEventsServer.getHandler()).getPerformance());
+        }
+        return out;
+    }
+
+    public void resetStatement() {
+        if(testMode) {
+            for (SyslogServer ss : syslogServers.values()) {
+                HandlerMonitor monitor = (HandlerMonitor) ss.getHandler();
+                monitor.reset();
+            }
+            ((HandlerMonitor) log4jEventsServer.getHandler()).reset();
+        }
     }
 
     class SyslogConf {
