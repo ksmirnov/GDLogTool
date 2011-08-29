@@ -29,7 +29,25 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>nexus-public</id>
+            <name>Local Nexus</name>
+            <url> http://black.calf.lupus.griddynamics.net:8081/nexus/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>nexus-releases</id>
+            <name>Local Nexus Releases</name>
+            <url> http://black.calf.lupus.griddynamics.net:8081/nexus/content/repositories/releases/</url>
+        </repository>
     </repositories>
+
+    <pluginRepositories>
+         <pluginRepository>
+            <id>nexus-public</id>
+            <name>Local Nexus</name>
+            <url>http://black.calf.lupus.griddynamics.net:8081/nexus/content/groups/public/</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <properties>
         <springVersion>3.0.5.RELEASE</springVersion>
