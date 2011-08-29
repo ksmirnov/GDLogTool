@@ -6,8 +6,20 @@
 
     <groupId>com.griddynamics.logtool</groupId>
     <artifactId>parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+
+    <modules>
+        <module>consumer</module>
+        <module>storage-api</module>
+        <module>file-storage</module>
+        <module>web-ui</module>
+	    <module>filetailer</module>
+        <module>search-server</module>
+        <module>udp-sendler</module>
+        <module>ssh-tailer</module>
+        <module>fitnesse-tests</module>
+    </modules>
 
     <repositories>
         <repository>
@@ -20,7 +32,6 @@
     </repositories>
 
     <properties>
-        <projectVersion>1.0-SNAPSHOT</projectVersion>
         <springVersion>3.0.5.RELEASE</springVersion>
         <jodaTimeVersion>1.6.2</jodaTimeVersion>
         <logbackVersion>0.9.29</logbackVersion>
@@ -34,6 +45,7 @@
         <servletApiVersion>2.5</servletApiVersion>
         <solrCoreVersion>3.3.0</solrCoreVersion>
         <solrjVersion>3.3.0</solrjVersion>
+        <httpcomponentsVersion>4.1.2</httpcomponentsVersion>
     </properties>
 
     <dependencyManagement>
@@ -41,43 +53,49 @@
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>consumer</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>file-storage</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>storage-api</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>web-ui</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>filetailer</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>search-server</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>udp-sendler</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>ssh-tailer</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.griddynamics.logtool</groupId>
+                <artifactId>fitnesse-tests</artifactId>
+                <version>${version}</version>
+            </dependency>
+
 
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -162,19 +180,19 @@
                 <artifactId>servlet-api</artifactId>
                 <version>${servletApiVersion}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpcomponentsVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcomponentsVersion}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <modules>
-        <module>consumer</module>
-        <module>storage-api</module>
-        <module>file-storage</module>
-        <module>web-ui</module>
-	    <module>filetailer</module>
-        <module>search-server</module>
-        <module>udp-sendler</module>
-        <module>ssh-tailer</module>
-    </modules>
 
     <build>
         <plugins>
