@@ -13,17 +13,28 @@ import java.util.concurrent.Executors;
 
 public class SyslogServer {
     private int port;
-    private SyslogServerHandler syslogServerHandler;
+    private SimpleChannelHandler channelHandler;
     private final ChannelGroup allChannels = new DefaultChannelGroup("syslog-server");
     private int bindChannelId;
     private final String regexp;
     private final Map<String, Integer> groups;
 
-    public SyslogServer(int port, final String regexp, final Map<String, Integer> groups, Storage storage, SearchServer searchServer) {
-        syslogServerHandler = new SyslogServerHandler(storage, searchServer, regexp, groups, allChannels);
+    public SyslogServer(int port, final String regexp, final Map<String, Integer> groups,
+                        Storage storage, SearchServer searchServer, boolean testMode) {
+        SimpleChannelHandler syslogServerHandler =
+                new SyslogServerHandler(storage, searchServer, regexp, groups, allChannels);
+        if(testMode) {
+            this.channelHandler = new HandlerMonitor(syslogServerHandler);
+        } else {
+            this.channelHandler = syslogServerHandler;
+        }
         this.regexp = regexp;
         this.groups = groups;
         this.port = port;
+    }
+
+    public ChannelHandler getHandler() {
+        return channelHandler;
     }
 
     public String getRegexp() {
@@ -43,7 +54,7 @@ public class SyslogServer {
 
         syslogServerBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
             public ChannelPipeline getPipeline() {
-                return Channels.pipeline(syslogServerHandler);
+                return Channels.pipeline(channelHandler);
             }
         });
         syslogServerBootstrap.setOption("child.keepAlive", true);

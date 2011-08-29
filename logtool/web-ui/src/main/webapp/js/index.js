@@ -27,8 +27,6 @@ Ext.onReady(function() {
     var solrSearchOccurrences = [];
     var isSolrSearch = false;
     var isGrepOverSolr = false;
-    var firstIndexes;
-    var occurrs;
     
     var next = Ext.create('Ext.Button', {
         text: 'Next',
@@ -152,7 +150,7 @@ Ext.onReady(function() {
                         listeners : {
                             itemclick : function(view, record, item,
                                     index, e) {
-                                if (record.isLeaf() && !searchRunning) {
+                                if (record.isLeaf()) {
                                     searchRunning = false;
                                     selectedFilePath = getFilePath(record);
                                     partViewed = -1;
@@ -439,12 +437,11 @@ Ext.onReady(function() {
                                 var reversedSearchDir = reversePath(searchRootDir);
                                 reversedSearchDir = reversedSearchDir.substring(0, reversedSearchDir.length - 1);
                                 var app = resApp.substring(resApp.indexOf(reversedSearchDir), resApp.length);
-
-                                searchGridStore.add({appspec: getAppSpec(app), occurrences: countOccurrences(resApp)});
+                                searchGridStore.add({appspec: app, occurrences: countOccurrences(resApp)});
                             }
                         } else {
                             for (resApp in searchResult) {
-                                searchGridStore.add({appspec: getAppSpec(resApp.substring(resApp.indexOf('||<>||') + 6)), occurrences: countOccurrences(resApp)});
+                                searchGridStore.add({appspec: resApp.substring(resApp.indexOf('||<>||') + 6), occurrences: countOccurrences(resApp)});
                             }
                         }
                     } else {
@@ -456,22 +453,6 @@ Ext.onReady(function() {
                 } else {
                     addOneRow(0);
                 }
-            };
-
-            function getAppSpec(app) {
-                var appspec;
-                if (app.length > 40) {
-                    var index = app.lastIndexOf('/');
-                    index = app.lastIndexOf('/', index - 1);
-                    if (index == -1) {
-                        appspec = app;
-                    } else {
-                        appspec = '...' + app.substring(index, app.length);
-                    }
-                } else {
-                    appspec = app;
-                }
-                return appspec;
             };
 
             function addOneRow(index) {
@@ -495,14 +476,14 @@ Ext.onReady(function() {
                     success: function (result, request) {
                         var resp = replaceStringDelimiters(result.responseText);
                         eval(resp);
-                        var app = solrSearchOccurrences[index].application + '/' +
-                                solrSearchOccurrences[index].host + '/' +
-                                solrSearchOccurrences[index].instance + '/' +
-                                solrSearchOccurrences[index].date +
+                        var appspec = solrSearchOccurrences[index].application + ' / ' +
+                                solrSearchOccurrences[index].host + ' / ' +
+                                solrSearchOccurrences[index].instance + ' / ' +
+                                solrSearchOccurrences[index].timestamp +
                                 '    (' + solrSearchOccurrences[index].startIndex + ', ' + solrSearchOccurrences[index].length + ')';
                         var msg = response.log + ' ...';
                         searchGridStore.add({
-                                appspec: getAppSpec(app),
+                                appspec: appspec,
                                 occurrences: msg
                             });
                         addOneRow(index + 1);
@@ -853,24 +834,20 @@ Ext.onReady(function() {
     });
 
     function writeText(pathToLog) {
-        if (selectedFilePath == "" || searchRunning) {
-            return;
-        }
-
+        var prevViewed = partViewed;
         if (pathToLog == 'prev') {
-            lastPage = false;
             pathToLog = selectedFilePath;
             if (partViewed >= lineForPage) {
                 partViewed = partViewed - lineForPage;
+                lastPage = false;
             } else {
                 partViewed = 0;
             }
         }
-
         if (pathToLog == 'next') {
             pathToLog = selectedFilePath;
             if (lastPage) {
-                partViewed = -1;
+                partViewid = -1;
             } else {
                 partViewed = partViewed + lineForPage;
             }
@@ -890,9 +867,10 @@ Ext.onReady(function() {
                 eval(res);
                 var countLogs = parseInt(response.total);
                 partViewed = parseInt(response.partViewed);
-                if (partViewed >= countLogs - lineForPage) {
+                if (partViewed >= countLogs - lineForPage)
+                    {
                     lastPage = true;
-                }
+                    }
                 document.getElementById('div2').innerHTML =
                                 (' Page viewed ' + parseInt(Math.ceil(partViewed/lineForPage)) +
                                 ' from ' + parseInt(Math.floor(countLogs/

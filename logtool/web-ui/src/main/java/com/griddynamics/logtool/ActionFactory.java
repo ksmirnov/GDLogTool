@@ -2,7 +2,7 @@ package com.griddynamics.logtool;
 
 public class ActionFactory {
 
-    public Action create(String actionName, Storage storage, SearchServer searchServer) {
+    public Action create(String actionName, Storage storage, SearchServer searchServer, Consumer consumer) {
         if (actionName.equalsIgnoreCase("getTree")) {
             TreeAction ta = new TreeAction();
             ta.setStorage(storage);
@@ -34,6 +34,10 @@ public class ActionFactory {
             ssa.setStorage(storage);
             ssa.setSearchServer(searchServer);
             return ssa;
+        } else if (actionName.equalsIgnoreCase("performance")) {
+            PerformanceAction pa = new PerformanceAction();
+            pa.setConsumer(consumer);
+            return pa;
         } else {
             throw new RuntimeException(" was unable to find an action named '" + actionName + "'.");
         }

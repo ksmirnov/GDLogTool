@@ -7,7 +7,7 @@
             <application>1</application>
             <instance>2</instance>
             <content>3</content>
-            <date>4</date>
+            <timestamp>4</timestamp>
         </groups>
     </listener>
 </listeners>
