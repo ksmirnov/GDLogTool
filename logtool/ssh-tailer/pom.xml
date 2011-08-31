@@ -4,7 +4,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>com.griddynamics.logtool</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>ssh-tailer</artifactId>

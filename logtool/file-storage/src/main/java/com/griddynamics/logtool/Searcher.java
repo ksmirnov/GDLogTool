@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,17 +23,25 @@ public class Searcher {
     private int startPage = -2;
     private int endPage = -2;
 
-    public Searcher(String request, int pageSize) {
+    private Map<String, FileChannel> openFiles = null;
+
+    public Searcher(String request, int pageSize, Map<String, FileChannel> openFiles) {
         this.request = request;
         this.pageSize = pageSize;
         this.actualPageSize = pageSize + request.length() - 1;
+        this.openFiles = openFiles;
     }
 
     public Map<String, Map<Integer, List<Integer>>> doSolrSearch(List<Map<String, String>> solrSearchResult) throws IOException {
         if(solrSearchResult != null) {
             for (Map<String, String> app : solrSearchResult) {
                 String path = app.get("path");
-                RandomAccessFile rafLog = new RandomAccessFile(path, "r");
+
+                if (!openFiles.containsKey(path)) {
+                    RandomAccessFile log = new RandomAccessFile(path, "r");
+                    openFiles.put(path, log.getChannel());
+                }
+                FileChannel fc = openFiles.get(path);
 
                 long startPos = Long.parseLong(app.get("startIndex"));
                 long length = Long.parseLong(app.get("length"));
@@ -40,7 +50,7 @@ public class Searcher {
                 startPage = (int) (startPos / pageSize);
                 endPage = (int) ((startPos + length) / pageSize);
 
-                byte[] buf = new byte[actualPageSize];
+                ByteBuffer buf = ByteBuffer.allocate(actualPageSize);
 
                 StringBuffer sb = new StringBuffer(path + "||<>||");
                 sb.append(app.get("application")).append(" / ");
@@ -49,27 +59,20 @@ public class Searcher {
                 sb.append(app.get("timestamp"));
                 sb.append(" (").append(startPos).append(", ").append(length).append(")");
 
-                try {
                 for (int i = startPage; i <= endPage; i++) {
                     long curPos = i * pageSize;
-                    rafLog.seek(curPos);
                     String chunk = null;
-                    int bytesRead = rafLog.read(buf);
+                    int bytesRead = fc.read(buf, curPos);
                     if (bytesRead == actualPageSize) {
-                        chunk = new String(buf);
+                        chunk = new String(buf.array());
                     } else {
-                        byte[] buff = new byte[bytesRead];
-                        rafLog.seek(curPos);
-                        rafLog.read(buff);
-                        chunk = new String(buff);
+                        ByteBuffer buff = ByteBuffer.allocate(bytesRead);
+                        fc.read(buff, curPos);
+                        chunk = new String(buff.array());
                     }
+
+                    buf.clear();
                     inStringSearch(chunk, i + 1, actualPageSize, sb.toString());
-                }
-                } catch (IOException e) {
-                    rafLog.close();
-                    throw e;
-                } finally {
-                    rafLog.close();
                 }
             }
         }
@@ -85,25 +88,28 @@ public class Searcher {
                 doSearchNew(subdir.getAbsolutePath());
             }
         } else {
-            RandomAccessFile rafLog = null;
-            rafLog = new RandomAccessFile(dir.getAbsolutePath(), "r");
-            byte[] buf = new byte[actualPageSize];
-            long parts = rafLog.length() / pageSize;
+            if (!openFiles.containsKey(dir.getAbsolutePath())) {
+                RandomAccessFile log = new RandomAccessFile(dir.getAbsolutePath(), "r");
+                openFiles.put(dir.getAbsolutePath(), log.getChannel());
+            }
+            FileChannel fc = openFiles.get(dir.getAbsolutePath());
+
+            ByteBuffer buf = ByteBuffer.allocate(actualPageSize);
+            long parts = fc.size() / pageSize;
             for (int i = 1; i < parts + 2; i++) {
-                rafLog.seek((i - 1) * pageSize);
                 String chunk = null;
-                int bytesRead = rafLog.read(buf);
+                int bytesRead = fc.read(buf, (i - 1) * pageSize);
                 if (bytesRead == actualPageSize) {
-                    chunk = new String(buf);
+                    chunk = new String(buf.array());
                 } else {
-                    byte[] buff = new byte[bytesRead];
-                    rafLog.seek((i - 1) * pageSize);
-                    rafLog.read(buff);
-                    chunk = new String(buff);
+                    ByteBuffer buff = ByteBuffer.allocate(bytesRead);
+                    fc.read(buff, (i - 1) * pageSize);
+                    chunk = new String(buff.array());
                 }
+
+                buf.clear();
                 inStringSearch(chunk, i, actualPageSize, dir.getAbsolutePath());
             }
-            rafLog.close();
         }
 
         return results;

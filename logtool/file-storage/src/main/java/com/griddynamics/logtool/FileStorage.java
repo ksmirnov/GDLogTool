@@ -181,13 +181,13 @@ public class FileStorage implements Storage {
     public Map<String, Map<Integer, List<Integer>>> doSearch(String[] path, String request, int pageSize) throws IOException {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
         String logPath = buildPath(clearPath);
-        Searcher searcher = new Searcher(request, pageSize);
+        Searcher searcher = new Searcher(request, pageSize, openFiles);
         return searcher.doSearchNew(logPath);
     }
 
     @Override
     public Map<String, Map<Integer, List<Integer>>> doGrepOverSolrSearch(List<Map<String, String>> results, String request, int pageSize) throws IOException {
-        Searcher searcher = new Searcher(request, pageSize);
+        Searcher searcher = new Searcher(request, pageSize, openFiles);
         return searcher.doSolrSearch(results);
     }
 
@@ -302,7 +302,6 @@ public class FileStorage implements Storage {
         int bytesToRead = bytesRemainingToRead > bytesRemainingInFile ? (int) bytesRemainingInFile : bytesRemainingToRead;
         if (bytesToRead > 0) {
             ByteBuffer buffer = ByteBuffer.allocate(bytesToRead);
-            fc.read(buffer, curPos);
             fc.read(buffer, curPos);
             outputStream.write(buffer.array());
         }

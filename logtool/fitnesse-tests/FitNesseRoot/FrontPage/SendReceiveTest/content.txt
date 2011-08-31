@@ -1,0 +1,7 @@
+!|fit.ActionFixture|
+|start|com.griddynamics.logtool.fixtures.SendlerFixture|
+|enter|send message|!-|Grinder| Some| 2011-08-15 23:59:33,908 | Fitnesse Test-!|
+
+!|fit.ActionFixture| 
+|start|com.griddynamics.logtool.fixtures.ReceiverFixture|
+|check|receive message|!-2011-08-15 23:59:33,908 | Fitnesse Test-!|
