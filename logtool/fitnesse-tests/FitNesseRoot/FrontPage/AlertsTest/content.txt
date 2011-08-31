@@ -1,14 +1,31 @@
+!*****< Import
 |Import|
 |com.griddynamics.logtool.fixtures|
+*****!
+
+Alerts test
 
 !|AlertsFixture|
-|at host|localhost|with port|8088|subscribe|test@test.test|to filter|*a*a*|
+|set host|localhost|
+|set port|8088|
+|subscribe|test@test.test|to filter|.*FATAL.*|
 
-sending messages
+!|SendlerFixture|
+|set host|localhost|
+|set port|4445|
+|sendMessage|This is FATAL test message|FromApplication|FitNesse|WithInstance|TestInstance|ThroughUDPInNumberOf|1|With|0|Delay|
 
 !|AlertsFixture|
-|host|localhost|with port|8088|has alerts with filter|*a*a*|
-|at host|localhost|with port|8088|mark alerts with filters|asd,*a*a*|
-|host|localhost|with port|8088|has no more test alerts|
+|set host|localhost|
+|set port|8088|
+|has alerts with filter|.*FATAL.*|
+|mark alerts with filters|.*ERROR.*,.*FATAL.*|
+|has no more test alerts with filters|.*ERROR.*,.*FATAL.*|
 
-delete all messages
+
+!*****< Current state restoring
+!|DeleteLogFixture|
+|set host|localhost|
+|set port|8088|
+|delete log from application|FitNesse|Host|localhost|Instance|TestInstance|
+*****!

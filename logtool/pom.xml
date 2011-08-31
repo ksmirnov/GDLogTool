@@ -32,7 +32,6 @@
     </pluginRepositories>
 
     <properties>
-        <projectVersion>1.0-SNAPSHOT</projectVersion>
         <springVersion>3.0.5.RELEASE</springVersion>
         <jodaTimeVersion>1.6.2</jodaTimeVersion>
         <logbackVersion>0.9.29</logbackVersion>
@@ -57,42 +56,42 @@
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>consumer</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>file-storage</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>storage-api</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>web-ui</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>filetailer</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>search-server</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>udp-sendler</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>ssh-tailer</artifactId>
-                <version>${projectVersion}</version>
+                <version>${version}</version>
             </dependency>
 
             <dependency>

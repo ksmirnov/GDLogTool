@@ -1,9 +1,16 @@
+!*****< Import
 |Import|
 |com.griddynamics.logtool.fixtures|
+*****!
 
-sending messages
+Delete log test
+
+!|SendlerFixture|
+|set host|localhost|
+|set port|4445|
+|sendMessage|This is test message|FromApplication|FitNesse|WithInstance|TestInstance|ThroughUDPInNumberOf|1|With|0|Delay|
 
 !|DeleteLogFixture|
-|at host|localhost|with port|8088|delete log in|!-app/host/inst-!|with file name|2011-30-Aug.log|
-
-delete all messages
+|set host|localhost|
+|set port|8088|
+|delete log from application|FitNesse|Host|localhost|Instance|TestInstance|

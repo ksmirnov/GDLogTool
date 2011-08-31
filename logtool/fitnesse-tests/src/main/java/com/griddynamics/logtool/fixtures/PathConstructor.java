@@ -41,4 +41,12 @@ public class PathConstructor {
         out.append(FORMATTER.print(System.currentTimeMillis())).append(".log");
         return out.toString();
     }
+
+    public static String getFilename() {
+        return FORMATTER.print(System.currentTimeMillis()) + ".log";
+    }
+
+    public static String createPath(String application, String host, String instance) {
+        return getFilename() + "/" + instance + "/" + host + "/" + application;
+    }
 }
