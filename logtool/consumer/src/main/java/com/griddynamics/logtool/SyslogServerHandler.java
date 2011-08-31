@@ -47,7 +47,6 @@ public class SyslogServerHandler extends SimpleChannelHandler {
             receivedMessage.append((char) buf.readByte());
         }
         Map<String,String> msg = messageParser.parseMessage(receivedMessage.toString());
-        logger.info(msg.get("timestamp"));
         if(msg.get("content") == null){
             msg.put("content",receivedMessage.toString());
         }

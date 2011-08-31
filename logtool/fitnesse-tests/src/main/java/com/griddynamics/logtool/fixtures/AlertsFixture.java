@@ -6,8 +6,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AlertsFixture extends DoFixture {
-    
-    public void atHostWithPortSubscribeToFilter(String host, int port, String email, String filter) throws Exception {
+    private String host;
+    private int port;
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void subscribeToFilter(String email, String filter) throws Exception {
         LogtoolRequester lr = new LogtoolRequester(host, port);
         Map<String, String> params = new HashMap<String, String>();
 
@@ -18,7 +28,7 @@ public class AlertsFixture extends DoFixture {
         lr.get(params);
     }
 
-    public boolean hostWithPortHasAlertsWithFilter(String host, int port, String filter) throws Exception {
+    public boolean hasAlertsWithFilter(String filter) throws Exception {
         LogtoolRequester lr = new LogtoolRequester(host, port);
         Map<String, String> params = new HashMap<String, String>();
 
@@ -26,14 +36,15 @@ public class AlertsFixture extends DoFixture {
         params.put("subaction", "getAlerts");
         params.put("filter", filter);
         String response = lr.get(params);
+
         return !response.equals("[]");
     }
 
-    public boolean notHaveAlerts(String host, int port, String filter) throws Exception {
-        return !hostWithPortHasAlertsWithFilter(host, port, filter);
+    public boolean notHaveAlerts(String filter) throws Exception {
+        return !hasAlertsWithFilter(filter);
     }
 
-    public void atHostWithPortMarkAlertsWithFilters(String host, int port, String[] filters) throws Exception {
+    public void markAlertsWithFilters(String[] filters) throws Exception {
         LogtoolRequester lr = new LogtoolRequester(host, port);
         Map<String, String> params = new HashMap<String, String>();
 
@@ -46,13 +57,25 @@ public class AlertsFixture extends DoFixture {
         }
     }
 
-    public boolean hostWithPortHasNoMoreTestAlerts(String host, int port) throws Exception {
+    public boolean hasNoMoreTestAlertsWithFilters(String[] filters) throws Exception {
         LogtoolRequester lr = new LogtoolRequester(host, port);
         Map<String, String> params = new HashMap<String, String>();
 
+        boolean res = true;
+
         params.put("action", "alertsAction");
-        params.put("subaction", "getFilters");
-        String response = lr.get(params);
-        return response.equals("[]");
+        params.put("subaction", "getAlerts");
+        for (String filter : filters) {
+            params.put("filter", filter);
+            String response = lr.get(params);
+            params.remove(filter);
+            res = res && response.equals("[]");
+        }
+
+        return res;
+//        params.put("action", "alertsAction");
+//        params.put("subaction", "getFilters");
+//        String response = lr.get(params);
+//        return response.equals("[]");
     }
 }

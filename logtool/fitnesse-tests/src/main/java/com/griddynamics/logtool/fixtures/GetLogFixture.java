@@ -5,7 +5,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -26,37 +25,22 @@ public class GetLogFixture extends DoFixture {
         this.port = port;
     }
 
-    private String getLog
-            (String logApplication, String logHost, String logInstance, String date, int partToView, int count)
-            throws Exception{
+    public boolean checkLogFromAppOnWithInstanceContain
+            (String application, String host, String instance, String message) throws Exception {
         String fs = System.getProperty("file.separator");
-        LogtoolRequester requester = new LogtoolRequester(host, port);
+        LogtoolRequester requester = new LogtoolRequester(this.host, port);
         Map<String, String> params = new HashMap<String, String>();
         params.put("action", "getLog");
         StringBuilder pathBuilder = new StringBuilder();
-        if(date != null) {
-            pathBuilder.append(FORMATTER.print(FORMATTER.parseDateTime(date))).append(".log").append(fs);
-        } else {
-            pathBuilder.append(FORMATTER.print(System.currentTimeMillis())).append(".log").append(fs);
-        }
-        pathBuilder.append(logInstance).append(fs);
-        pathBuilder.append(logHost).append(fs);
-        pathBuilder.append(logApplication);
+        pathBuilder.append(FORMATTER.print(System.currentTimeMillis())).append(".log").append(fs);
+        pathBuilder.append(instance).append(fs);
+        pathBuilder.append(host).append(fs);
+        pathBuilder.append(application);
         params.put("path", pathBuilder.toString());
-        params.put("partToView", String.valueOf(partToView));
-        params.put("lines", String.valueOf(count));
+        params.put("partToView", "-1");
+        params.put("lines", "2500");
         String response = requester.get(params);
-        int index = response.indexOf("'log' : '");
-        System.out.println(response);
-        return response.substring(index + 9, response.length() - 3);
-    }
-
-    public boolean checkLogFromPathContainsOnLastPage(String path, String message) throws Exception {
-        List<String> segments = PathConstructor.getPathSegments(path);
-        if(segments.size() < 3) {
-            throw new IllegalArgumentException("Not enough path segments");
-        } else {
-            return true;
-        }
+        int index = response.indexOf(message);
+        return index > 0;
     }
 }
