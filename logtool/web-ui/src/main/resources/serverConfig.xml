@@ -10,7 +10,7 @@
         <property name="storage" ref="fileStorage"/>
         <property name="searchServer" ref="searchServer"/>
         <property name="log4jPort" value="4444"/>
-        <property name="testMode" value="true"/>
+        <property name="testMode" value="false"/>
     </bean>
 
 </beans>

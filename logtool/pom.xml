@@ -9,18 +9,6 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <modules>
-        <module>consumer</module>
-        <module>storage-api</module>
-        <module>file-storage</module>
-        <module>web-ui</module>
-	    <module>filetailer</module>
-        <module>search-server</module>
-        <module>udp-sendler</module>
-        <module>ssh-tailer</module>
-        <module>fitnesse-tests</module>
-    </modules>
-
     <repositories>
         <repository>
             <id>repository.jboss.org</id>
@@ -30,26 +18,21 @@
             </snapshots>
         </repository>
         <repository>
-            <id>nexus-public</id>
-            <name>Local Nexus</name>
-            <url> http://black.calf.lupus.griddynamics.net:8081/nexus/content/groups/public/</url>
-        </repository>
-        <repository>
-            <id>nexus-releases</id>
-            <name>Local Nexus Releases</name>
-            <url> http://black.calf.lupus.griddynamics.net:8081/nexus/content/repositories/releases/</url>
+             <id>nexus-public</id>
+             <name>Local Nexus</name>
+             <url>http://black.calf.lupus.griddynamics.net:8081/nexus/content/groups/public/</url>
         </repository>
     </repositories>
-
-    <pluginRepositories>
+     <pluginRepositories>
          <pluginRepository>
-            <id>nexus-public</id>
-            <name>Local Nexus</name>
-            <url>http://black.calf.lupus.griddynamics.net:8081/nexus/content/groups/public/</url>
-        </pluginRepository>
+             <id>nexus-public</id>
+                 <name>Local Nexus</name>
+                 <url>http://black.calf.lupus.griddynamics.net:8081/nexus/content/groups/public/</url>
+         </pluginRepository>
     </pluginRepositories>
 
     <properties>
+        <projectVersion>1.0-SNAPSHOT</projectVersion>
         <springVersion>3.0.5.RELEASE</springVersion>
         <jodaTimeVersion>1.6.2</jodaTimeVersion>
         <logbackVersion>0.9.29</logbackVersion>
@@ -65,6 +48,8 @@
         <solrjVersion>3.3.0</solrjVersion>
         <httpcomponentsVersion>4.1.2</httpcomponentsVersion>
         <fitnesseVersion>20110104</fitnesseVersion>
+        <fitlibraryVersion>20081102</fitlibraryVersion>
+        
     </properties>
 
     <dependencyManagement>
@@ -72,49 +57,43 @@
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>consumer</artifactId>
-                <version>${version}</version>
+                <version>${projectVersion}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>file-storage</artifactId>
-                <version>${version}</version>
+                <version>${projectVersion}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>storage-api</artifactId>
-                <version>${version}</version>
+                <version>${projectVersion}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>web-ui</artifactId>
-                <version>${version}</version>
+                <version>${projectVersion}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>filetailer</artifactId>
-                <version>${version}</version>
+                <version>${projectVersion}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>search-server</artifactId>
-                <version>${version}</version>
+                <version>${projectVersion}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>udp-sendler</artifactId>
-                <version>${version}</version>
+                <version>${projectVersion}</version>
             </dependency>
             <dependency>
                 <groupId>com.griddynamics.logtool</groupId>
                 <artifactId>ssh-tailer</artifactId>
-                <version>${version}</version>
+                <version>${projectVersion}</version>
             </dependency>
-            <dependency>
-                <groupId>com.griddynamics.logtool</groupId>
-                <artifactId>fitnesse-tests</artifactId>
-                <version>${version}</version>
-            </dependency>
-
 
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -202,12 +181,12 @@
 
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpclient</artifactId>
+                <artifactId>httpcore</artifactId>
                 <version>${httpcomponentsVersion}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpcore</artifactId>
+                <artifactId>httpclient</artifactId>
                 <version>${httpcomponentsVersion}</version>
             </dependency>
 
@@ -216,8 +195,25 @@
                 <artifactId>fitnesse</artifactId>
                 <version>${fitnesseVersion}</version>
             </dependency>
+            <dependency>
+                <groupId>org.fitnesse</groupId>
+                <artifactId>fitlibrary</artifactId>
+                <version>${fitlibraryVersion}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <modules>
+        <module>consumer</module>
+        <module>storage-api</module>
+        <module>file-storage</module>
+        <module>web-ui</module>
+	    <module>filetailer</module>
+        <module>search-server</module>
+        <module>udp-sendler</module>
+        <module>ssh-tailer</module>
+        <module>fitnesse-tests</module>
+    </modules>
 
     <build>
         <plugins>

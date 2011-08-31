@@ -15,4 +15,8 @@ To add your first "page", click the [[Edit][FrontPage?edit]] button and add a [[
 !path ./target/lib/*
 !path ./target/*
 
->SendReceiveTest
+>SyslogSendReceiveTest
+>SocketAppenderSendReceiveTest
+>DeleteLogTest
+>DeleteDirectoryTest
+>AlertsTest

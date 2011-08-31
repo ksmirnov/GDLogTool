@@ -1,0 +1,10 @@
+|Import|
+|com.griddynamics.logtool.fixtures|
+
+sending messages
+
+!|DeleteDirectoryFixture|
+|at host|localhost|with port|8088|delete directory|!-app/host/inst-!|
+|at host|localhost|with port|8088|check removal of log with path|!-app/host/inst-!|and file name|2011-30-Aug.log|
+
+delete all messages

@@ -3,6 +3,8 @@ package com.griddynamics.logtool;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.group.ChannelGroup;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +13,7 @@ import java.util.Map;
 
 
 public class SyslogServerHandler extends SimpleChannelHandler {
-    private static final Logger logger = LoggerFactory.getLogger(Log4jEventsHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(SyslogServerHandler.class);
 
     private final Storage storage;
     private final SearchServer searchServer;
@@ -45,7 +47,7 @@ public class SyslogServerHandler extends SimpleChannelHandler {
             receivedMessage.append((char) buf.readByte());
         }
         Map<String,String> msg = messageParser.parseMessage(receivedMessage.toString());
-
+        logger.info(msg.get("timestamp"));
         if(msg.get("content") == null){
             msg.put("content",receivedMessage.toString());
         }
@@ -53,7 +55,8 @@ public class SyslogServerHandler extends SimpleChannelHandler {
         path[0] = msg.get("application");
         path[1] = host;
         path[2] = msg.get("instance");
-        msg.putAll(storage.addMessage(path, msg.get("timestamp"),msg.get("content")));
+        msg.putAll(storage.addMessage(path, msg.get("timestamp"), msg.get("content")));
+        msg.put("timestamp", msg.get("timestamp") + "Z");
         searchServer.index(msg);
     }
 

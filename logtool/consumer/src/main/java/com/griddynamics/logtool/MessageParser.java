@@ -14,7 +14,7 @@ public class MessageParser {
     private static final String ABSOLUTE="[0-2][0-9]:[0-5][0-9]:[0-5][0-9],[0-9]{3}";
     private static final Pattern ISO8601DatePattern = Pattern.compile("(" + ISO8601Date+ ") " + ABSOLUTE);
     private static final Pattern DATEDatePattern = Pattern.compile("(" + DATEDate+ ") " + ABSOLUTE);
-    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     private static final DateTimeFormatter isoFmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss,SSS");
     private static final DateTimeFormatter dateFmt = DateTimeFormat.forPattern("dd MMM yyyy HH:mm:ss,SSS");

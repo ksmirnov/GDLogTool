@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
-
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SearchServerImpl implements SearchServer {
 
@@ -22,14 +22,17 @@ public class SearchServerImpl implements SearchServer {
     private CoreContainer container;
     private EmbeddedSolrServer server;
     private String solrPath;
+    private int cacheBeforeCommit;
+    private AtomicInteger docsCounter = new AtomicInteger(0);
 
-    public SearchServerImpl(String solrPath) {
+    public SearchServerImpl(String solrPath, int cacheBeforeCommit, long updatePeriod) {
         if(!solrPath.isEmpty() && !solrPath.equals("default")) {
             File f = new File(solrPath);
             if(f.exists() && f.isDirectory()) {
                 System.setProperty("solr.solr.home", solrPath);
             }
         }
+        this.cacheBeforeCommit = cacheBeforeCommit;
         CoreContainer.Initializer initializer = new CoreContainer.Initializer();
         try {
             container = initializer.initialize();
@@ -39,8 +42,20 @@ public class SearchServerImpl implements SearchServer {
         }
         this.solrPath = container.getSolrHome();
         server = new EmbeddedSolrServer(container, "collection1");
+        TimerTask commitTask = new TimerTask() {
+            public void run() {
+                try {
+                    server.commit();
+                    docsCounter.set(0);
+                } catch (Exception e) {
+                    logger.error("Unable to commit documents by timer", e);
+                }
+            }
+        };
+        Timer timer = new Timer(true);
+        timer.schedule(commitTask, updatePeriod, updatePeriod);
     }
-    
+
     @Override
     public void index(Map<String, String> fields) throws IllegalArgumentException {
         if(!fields.containsKey("path") || !fields.containsKey("startIndex") || !fields.containsKey("length") ||
@@ -54,7 +69,10 @@ public class SearchServerImpl implements SearchServer {
         }
         try {
             server.add(doc);
-            server.commit();
+            if(docsCounter.incrementAndGet() >= cacheBeforeCommit) {
+                server.commit();
+                docsCounter.set(0);
+            }
         } catch (Exception e) {
             logger.error("Unable to index document", e);
         }
@@ -62,6 +80,12 @@ public class SearchServerImpl implements SearchServer {
 
     @Override
     public List<Map<String, String>> search(String query) {
+        try {
+            server.commit();
+            docsCounter.set(0);
+        } catch (Exception e) {
+            logger.error("Unable to commit documents before perform search query", e);
+        }
         SolrQuery solrQuery = new SolrQuery(query);
         solrQuery.setRows(Integer.MAX_VALUE);
         QueryResponse resp;
@@ -88,6 +112,12 @@ public class SearchServerImpl implements SearchServer {
     @Override
     public void delete(String query) {
         try {
+            server.commit();
+            docsCounter.set(0);
+        } catch (Exception e) {
+            logger.error("Unable to commit documents before deleting", e);
+        }
+        try {
             server.deleteByQuery(query);
             server.commit();
         } catch (Exception e) {
@@ -103,5 +133,4 @@ public class SearchServerImpl implements SearchServer {
     public String getSolrPath() {
         return solrPath;
     }
-
 }

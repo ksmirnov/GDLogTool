@@ -28,7 +28,7 @@ public class SearchServerImplTest {
             solrDir = new File(solrPath + postfix);
         }
         solrDir.mkdir();
-        searchServer = new SearchServerImpl(solrDir.getAbsolutePath());
+        searchServer = new SearchServerImpl(solrDir.getAbsolutePath(), 100, 300000);
         
         Map<String, String> doc = new HashMap<String, String>();
         doc.put("path", "some path");
