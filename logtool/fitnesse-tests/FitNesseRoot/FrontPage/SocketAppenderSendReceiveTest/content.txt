@@ -1,0 +1,10 @@
+|Import|
+|com.griddynamics.logtool.fixtures|
+
+!|SendlerFixture|
+|set host|localhost|
+|set port|4444|
+|send message|this is test message|from application|TestApp.TestInstance|through TCP in number of|1|with|0|delay|
+
+
+Deleting test message

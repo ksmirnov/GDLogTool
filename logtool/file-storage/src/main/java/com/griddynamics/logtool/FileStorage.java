@@ -351,11 +351,13 @@ public class FileStorage implements Storage {
         }
         String logPath = buildPath(clearPath);
 
-        for (String log : openFiles.keySet()) {
+        Iterator<String> it = openFiles.keySet().iterator();
+        while(it.hasNext()) {
+            String log = it.next();
             if (log.indexOf(logPath) == 0) {
                 try {
                     openFiles.get(log).close();
-                    openFiles.remove(log);
+                    it.remove();
                     out.add(log);
                 } catch (IOException ex) {
                     logger.error("Couldn't close log file: " + log);
@@ -385,6 +387,7 @@ public class FileStorage implements Storage {
         }
         return out;
     }
+
 
     @Override
     public synchronized Tree getTree(int height, String... path) {

@@ -9,5 +9,7 @@
 
     <bean id="searchServer" class="com.griddynamics.logtool.SearchServerImpl">
         <constructor-arg name="solrPath" value="${solrPath}"/>
+        <constructor-arg name="cacheBeforeCommit" value="${cacheBeforeCommit}"/>
+        <constructor-arg name="updatePeriod" value="${updatePeriod}"/>
     </bean>
 </beans>

@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.net.*;
 import java.util.StringTokenizer;
 
-class UDPSendler {
+public class UDPSendler {
     private static int port = 4445;
     private InetAddress IPAddress;
     private String notSendedText = "";
     private DatagramSocket clientSocket;
 
-    UDPSendler(String host, int port) {
+    public UDPSendler(String host, int port) {
         this.port = port;
         try {
             this.IPAddress = InetAddress.getByName(host);
