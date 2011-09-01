@@ -23,7 +23,7 @@ Host and port - address of http server
 !|GrepSearchFixture|
 |Set host|localhost|
 |Set port|8088|
-|Check search by path|2011-31-Aug.log/UDPTestInstance/localhost/FitNesse|with request|grep: find|have|2|finding|
+|Check search by path|UDPTestInstance/localhost/FitNesse|with request|find|have|2|finding|
 
 !*****< Clearing server after test
 !|DeleteDirectoryFixture|

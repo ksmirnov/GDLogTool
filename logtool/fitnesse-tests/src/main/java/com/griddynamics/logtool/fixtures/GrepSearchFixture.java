@@ -22,6 +22,9 @@ public class GrepSearchFixture extends DoFixture {
     }
 
     public boolean checkSearchByPathWithRequestHaveFinding(String path, String request, int needToFind) throws Exception {
+        if(request.indexOf("grep:") != -1) {
+            request = request.substring(request.indexOf("grep:")+6, request.length());
+        }
         LogtoolRequester requester = new LogtoolRequester(host, port);
         Map<String, String> params = new HashMap<String, String>();
         params.put("action", "doSearch");
