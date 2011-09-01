@@ -48,6 +48,7 @@
         <httpcomponentsVersion>4.1.2</httpcomponentsVersion>
         <fitnesseVersion>20110104</fitnesseVersion>
         <fitlibraryVersion>20081102</fitlibraryVersion>
+        <jsonsimpleVersion>1.1</jsonsimpleVersion>
         
     </properties>
 
@@ -198,6 +199,11 @@
                 <groupId>org.fitnesse</groupId>
                 <artifactId>fitlibrary</artifactId>
                 <version>${fitlibraryVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.json-simple</groupId>
+                <artifactId>json-simple</artifactId>
+                <version>${jsonsimpleVersion}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
