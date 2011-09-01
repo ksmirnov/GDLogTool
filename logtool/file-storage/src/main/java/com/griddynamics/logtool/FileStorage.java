@@ -345,7 +345,6 @@ public class FileStorage implements Storage {
     @Override
     public synchronized Set<String> deleteDirectory(String... path) {
         String[] clearPath = removeNullAndEmptyPathSegments(path);
-        Set<String> out = new HashSet<String>();
         if (clearPath.length == 0) {
             return null;
         }
@@ -358,7 +357,6 @@ public class FileStorage implements Storage {
                 try {
                     openFiles.get(log).close();
                     it.remove();
-                    out.add(log);
                 } catch (IOException ex) {
                     logger.error("Couldn't close log file: " + log);
                 }
@@ -367,8 +365,9 @@ public class FileStorage implements Storage {
 
         long logDirSize = measureSize(logPath);
 
-        File log = new File(logPath);
-        if (!deleteDirectory(log)) {
+        File logDir = new File(logPath);
+        Set<String> out = findFiles(logDir, ".*.log");
+        if (!deleteDirectory(logDir)) {
             logger.error("Couldn't delete directory: " + logPath);
         } else {
             curFolderSize -= logDirSize;
@@ -381,9 +380,23 @@ public class FileStorage implements Storage {
 
         String[] upPath = getUpPath(clearPath);
         logPath = buildPath(upPath);
-        log = new File(logPath);
-        if (log.list().length == 0) {
+        logDir = new File(logPath);
+        if (logDir.list().length == 0) {
             deleteDirectory(upPath);
+        }
+        return out;
+    }
+
+    private Set<String> findFiles(File path, String pattern) {
+        Set out = new HashSet<String>();
+        if(path.isFile()) {
+            if(Pattern.matches(pattern, path.getName())) {
+                out.add(path.getPath());
+            }
+        } else {
+            for(File f : path.listFiles()) {
+                out.addAll(findFiles(f, pattern));
+            }
         }
         return out;
     }

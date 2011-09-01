@@ -13,7 +13,7 @@ Alerts test
 !|SendlerFixture|
 |set host|localhost|
 |set port|4445|
-|sendMessage|This is FATAL test message|FromApplication|FitNesse|WithInstance|TestInstance|ThroughUDPInNumberOf|1|With|0|Delay|
+|sendMessage|This is FATAL test message|FromApplication|FitNesse|WithInstance|TestInstance|ThroughUDPInNumberOf|1|With|1000|Delay|
 
 !|AlertsFixture|
 |set host|localhost|
