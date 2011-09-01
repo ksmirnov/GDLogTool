@@ -21,17 +21,6 @@ public class GrepSearchFixture extends DoFixture {
         this.port = port;
     }
 
-    public static void main(String[] args) {
-        GrepSearchFixture gf = new GrepSearchFixture();
-        gf.setHost("localhost");
-        gf.setPort(8088);
-        try {
-            gf.checkSearchByPathWithRequestHaveFinding("2011-01-Sep.log/UDPTestInstance/localhost/FitNesse", "find", 2);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public boolean checkSearchByPathWithRequestHaveFinding(String path, String request, int needToFind) throws Exception {
         if(request.indexOf("grep:") != -1) {
             request = request.substring(request.indexOf("grep:")+6, request.length());
