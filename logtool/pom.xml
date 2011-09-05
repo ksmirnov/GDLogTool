@@ -225,6 +225,7 @@
         <module>udp-sendler</module>
         <module>ssh-tailer</module>
         <module>fitnesse-tests</module>
+        <module>selenium-tests</module>
     </modules>
 
     <build>
