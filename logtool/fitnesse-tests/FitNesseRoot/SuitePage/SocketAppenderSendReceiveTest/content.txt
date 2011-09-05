@@ -1,0 +1,31 @@
+The sendler fixture sends specified messages through TCP using:
+host - host where server's started on
+port - TCP listener's port
+!*****< Importing fixtures package
+|Import|
+|com.griddynamics.logtool.fixtures|
+******!
+!|SendlerFixture|
+|Set host|localhost|
+|Set port|4444|
+|Send message|This is test message|from application|SocketAppenderSendReceiveTest.TCPTestInstance|through TCP in number of|1|with|0|delay|
+!*****< Sleeping before test
+!|ServiceFixture|
+|sleep for|100|
+******!
+The following fixture checks if the last page of specified log contains given message.
+Host and port - address of http server.
+
+!|GetLogFixture|
+|Set host|localhost|
+|Set port|8088|
+|Check log from app|SocketAppenderSendReceiveTest|on|localhost|with instance|TCPTestInstance|contain|This is test message|
+
+!*****< Clearing server after test
+!|DeleteDirectoryFixture|
+|Set host|localhost|
+|Set port|8088|
+|delete directory|SocketAppenderSendReceiveTest|
+!|ServiceFixture|
+|sleep for|500|
+******!

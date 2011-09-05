@@ -27,10 +27,16 @@ public class AlertsAction extends Action {
         } else if(subaction.equalsIgnoreCase("removeFilter")) {
             removeFilter(req.getParameter("filter"));
             out = getFilters();
+        } else if (subaction.equalsIgnoreCase("subscribe")) {
+            subscribe(req.getParameter("email"), req.getParameter("filter"));
         }
         PrintWriter output = resp.getWriter();
         output.println(out);
         output.close();
+    }
+
+    protected void subscribe(String email, String filter) {
+        storage.subscribe(filter, email);
     }
 
     protected String getFilters() {
