@@ -1,0 +1,24 @@
+!*****< Import
+|Import|
+|com.griddynamics.logtool.fixtures|
+*****!
+
+Delete directory test
+
+!|SendlerFixture|
+|set host|localhost|
+|set port|4445|
+|sendMessage|This is test message|FromApplication|DeleteDirectoryTest|WithInstance|TestInstance|ThroughUDPInNumberOf|1|With|0|Delay|
+!*****< Sleeping before test
+!|ServiceFixture|
+|sleep for|100|
+******!
+!|DeleteDirectoryFixture|
+|set host|localhost|
+|set port|8088|
+|delete directory|!-DeleteDirectoryTest/localhost/TestInstance-!|
+|check removal of log with application|DeleteDirectoryTest|Host|localhost|Instance|TestInstance|
+!*****< Sleeping after test
+!|ServiceFixture|
+|sleep for|500|
+******!

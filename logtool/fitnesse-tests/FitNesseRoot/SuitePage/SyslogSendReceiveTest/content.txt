@@ -8,19 +8,24 @@ port - UDP listener's port
 !|SendlerFixture|
 |Set host|localhost|
 |Set port|4445|
-|Send message|This is test message|from application|FitNesse|with instance|UDPTestInstance|through UDP in number of|1|with|0|delay|
-
+|Send message|This is test message|from application|SyslogSendRecieveTest|with instance|UDPTestInstance|through UDP in number of|1|with|0|delay|
+!*****< Sleeping before test
+!|ServiceFixture|
+|sleep for|100|
+******!
 The following fixture checks if the last page of specified log contains given message.
 Host and port - address of http server.
 
 !|GetLogFixture|
 |Set host|localhost|
 |Set port|8088|
-|Check log from app|FitNesse|on|localhost|with instance|UDPTestInstance|contain|This is test message|
+|Check log from app|SyslogSendRecieveTest|on|localhost|with instance|UDPTestInstance|contain|This is test message|
 
 !*****< Clearing server after test
 !|DeleteDirectoryFixture|
 |Set host|localhost|
 |Set port|8088|
-|delete directory|FitNesse|
+|delete directory|SyslogSendRecieveTest|
+!|ServiceFixture|
+|sleep for|500|
 ******!

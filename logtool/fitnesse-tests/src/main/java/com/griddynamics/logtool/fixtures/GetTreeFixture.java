@@ -20,7 +20,7 @@ public class GetTreeFixture extends DoFixture {
         this.port = port;
     }
 
-    public boolean checkIsInTree(String path) throws Exception {
+    public boolean isPathInTheTree(String path) throws Exception {
         String fs = System.getProperty("file.separator");
         LogtoolRequester requester = new LogtoolRequester(host, port);
         Map<String, String> params = new HashMap<String, String>();

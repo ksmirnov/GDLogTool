@@ -1,0 +1,15 @@
+!1 Welcome to Logtool FitNesse tests page!
+!*****< Some definitions...
+!path ./target/lib/*
+!path ./target/*
+******!
+| '''Available tests:'''|
+| [[UDP. Sending and receiving][SuitePage.SyslogSendReceiveTest]]|''Send some messages through UDP and then check their accessibility by getLog action''|
+| [[TCP. Sending and receiving][SuitePage.SocketAppenderSendReceiveTest]]|''Send some messages through TCP and then check their accessibility by getLog action''|
+| [[Getting tree][SuitePage.GetTreeTest]]|''Send some messages through both UDP and TCP then check their existence in a tree received by getTree action''|
+| [[Deleting log][SuitePage.DeleteLogTest]]|''Create log and then delete it''|
+| [[Deleting directory][SuitePage.DeleteDirectoryTest]]|''Create log and then delete directory tah contains it''|
+| [[Alerting service][SuitePage.AlertsTest]]|''Complete alerting service test: subscribing, invoking alerts, getting them and finally marking all as red''|
+| [[Searching using grep only][SuitePage.GrepSearchTest]]|''Create log and grep some text in it''|
+| [[Searching via Solr][SuitePage.SolrSearchTest]]|''Send some messages and then search data using Solr query''|
+| [[Grepping over Solr search][SuitePage.GrepOverSolrTest]]|''Send some messages and then search data using Solr query combined with grep''|
