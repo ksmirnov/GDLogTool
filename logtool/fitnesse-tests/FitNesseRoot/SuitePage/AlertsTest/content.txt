@@ -1,0 +1,38 @@
+!*****< Import
+|Import|
+|com.griddynamics.logtool.fixtures|
+*****!
+Alerts test
+
+!|AlertsFixture|
+|set host|localhost|
+|set port|8088|
+|subscribe|test@test.test|to filter|.*FATAL.*|
+!*****< Sleeping after subscribing
+!|ServiceFixture|
+|sleep for|100|
+******!
+!|SendlerFixture|
+|set host|localhost|
+|set port|4445|
+|sendMessage|This is FATAL test message|FromApplication|AlertsTest|WithInstance|TestInstance|ThroughUDPInNumberOf|1|With|1000|Delay|
+!*****< Sleeping before test
+!|ServiceFixture|
+|sleep for|100|
+******!
+!|AlertsFixture|
+|set host|localhost|
+|set port|8088|
+|has alerts with filter|.*FATAL.*|
+|mark alerts with filters|.*ERROR.*,.*FATAL.*|
+|has no more test alerts with filters|.*ERROR.*,.*FATAL.*|
+
+
+!*****< Current state restoring
+!|DeleteLogFixture|
+|set host|localhost|
+|set port|8088|
+|delete log from application|AlertsTest|Host|localhost|Instance|TestInstance|
+!|ServiceFixture|
+|sleep for|500|
+******!

@@ -33,6 +33,7 @@ public class SendlerFixture extends DoFixture {
             logger.info(message + " " + i);
             Thread.sleep(delay);
         }
+        appender.close();
     }
     
     public void sendMessageFromApplicationWithInstanceThroughUDPInNumberOfWithDelay
