@@ -43,15 +43,11 @@ public class SshFixture extends DoFixture {
     }
 
 
-
-
-
     public void createFileBySsh() throws IOException {
         if (!ssh.isConnected()) {
             sshConnect();
         }
         execSshCommand("touch " + pathToFile);
-        System.out.println("File successfully created");
     }
 
     public void startSshTailerWatching() {
@@ -73,11 +69,9 @@ public class SshFixture extends DoFixture {
         }
         Thread.sleep(200);
         execSshCommand("echo '" + msg + "' >> " + pathToFile);
-        System.out.println("Successfully written");
     }
 
     public void stopSshTailerWatching() throws InterruptedException {
-            System.out.println("Trying to kill process with :" + "ps aux | grep ssh-tailer-1.0.0-SNAPSHOT.jar.*" + pathToFile);
             tailerProcess.destroy();
     }
 
@@ -85,7 +79,6 @@ public class SshFixture extends DoFixture {
         Thread.sleep(1000);
         execSshCommand("rm " + pathToFile);
         sshDisconnect();
-        System.out.println("Successfully deleted");
 
     }
 
@@ -115,30 +108,8 @@ public class SshFixture extends DoFixture {
         ssh.disconnect();
     }
 
-    public static void main (String[] args) {
-        SshFixture sf = new SshFixture();
-        sf.setHostToReadFrom("localhost");
-        sf.setUserToReadFrom("slivotov");
-        sf.setPathToFile("/home/slivotov/blakie.txt");
-        sf.setHostToSend("localhost");
-        sf.setPortToSend(4445);
-        try {
-            sf.createFileBySsh();
-            sf.startSshTailerWatching();
-            sf.writeMessageToFile("Aga klassno poluchilos! ");
-            sf.writeMessageToFile("Eto tebe ne siski myat'! ");
-            sf.writeMessageToFile("Eto SPARTA!!");
-            sf.deleteFileBySsh();
-            sf.stopSshTailerWatching();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void deleteLog(String searchQuery) throws Exception {
-                LogtoolRequester requester = new LogtoolRequester(hostToSend, portToSend);
+        LogtoolRequester requester = new LogtoolRequester(hostToSend, portToSend);
         Map<String, String> params = new HashMap<String, String>();
         params.put("action", "doSolrSearch");
         params.put("subaction", "solrsearch");
@@ -147,12 +118,9 @@ public class SshFixture extends DoFixture {
         response = response.substring(response.indexOf("["), response.length());
         JSONArray array=(JSONArray) JSONValue.parse(response);
         JSONObject obj = (JSONObject) array.get(0);
-        System.out.println(PathConstructor.reversePath(obj.get("path").toString()));
-//        LogtoolRequester lr = new LogtoolRequester(host, port);
         params.clear();
         params.put("action", "deleteLog");
         params.put("path", PathConstructor.reversePath(obj.get("path").toString()));
         requester.get(params);
     }
-
 }
