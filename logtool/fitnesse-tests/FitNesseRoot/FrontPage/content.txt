@@ -23,3 +23,4 @@ To add your first "page", click the [[Edit][FrontPage?edit]] button and add a [[
 >SolrSearchTest
 >GrepOverSolrTest
 >GrepSearchTest
+>SshTailerTest

@@ -21,6 +21,11 @@
             <version>1.6.1</version>
         </dependency>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+        <dependency>
             <groupId>net.schmizz</groupId>
             <artifactId>sshj</artifactId>
             <version>0.5.0</version>
@@ -31,4 +36,23 @@
             <version>1.46</version>
         </dependency>
     </dependencies>
+
+    <build>
+      <finalName>ssh-tailer</finalName>
+      <plugins>
+        <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <configuration>
+            <descriptors>
+              <descriptor>src/assemble/exe.xml</descriptor>
+            </descriptors>
+            <archive>
+              <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
+            </archive>
+          </configuration>
+        </plugin>
+      </plugins>
+    </build>
+    
+
 </project>

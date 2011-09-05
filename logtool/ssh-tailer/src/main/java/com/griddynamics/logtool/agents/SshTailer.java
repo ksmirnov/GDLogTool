@@ -1,12 +1,8 @@
 package com.griddynamics.logtool.agents;
 
 import net.schmizz.sshj.SSHClient;
-import net.schmizz.sshj.common.IOUtils;
-import net.schmizz.sshj.connection.ConnectionException;
 import net.schmizz.sshj.connection.channel.direct.Session;
 import net.schmizz.sshj.connection.channel.direct.Session.Command;
-import net.schmizz.sshj.transport.TransportException;
-import net.schmizz.sshj.userauth.UserAuthException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,26 +16,18 @@ public class SshTailer {
     Map<String, Thread> activeWatchingHosts = new HashMap<String, Thread>();
 
     public static void main(String[] args) {
-        Properties props = new Properties();
-        try {
-            InputStream in = SshTailer.class.getResourceAsStream("/sshtailerConfig.properties");
-            props.load(in);
-            in.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        SshTailer sshTailer = new SshTailer();
-        String hostToSend = props.getProperty("hostToSend");
-        int portToSend = Integer.parseInt(props.getProperty("portToSend"));
-        sshTailer.addHostForWatching(props.getProperty("hostToReadFrom"),
-                props.getProperty("filesToReadFrom"),props.getProperty("userToReadFrom"),
-                hostToSend, portToSend);
-        int i = 1;
-        while (props.getProperty("hostToReadFrom" + i) != null) {
-            sshTailer.addHostForWatching(props.getProperty("hostToReadFrom" + i),
-                    props.getProperty("filesToReadFrom" + i), props.getProperty("userToReadFrom" + i), 
-                    hostToSend, portToSend);
-            i++;
+        if(args.length % 5 != 0 ){
+            System.out.println("Incorrect properties");
+        } else {
+            SshTailer sshTailer = new SshTailer();
+            for (int i = 0; i < args.length/5; i++) {
+                String hostToReadFrom = args[0 + 5*i];
+                String filesToRead = args[1 + 5*i];
+                String userToReadFrom = args[2 + 5*i];
+                String hostToSend= args[3 + 5*i];
+                int portToSend = Integer.parseInt(args[4 + 5*i]);
+                sshTailer.addHostForWatching(hostToReadFrom, filesToRead, userToReadFrom, hostToSend , portToSend);
+            }
         }
     }
 
@@ -156,6 +144,7 @@ class WatchingSsh implements Runnable {
                             sb.append((char) r);
                         } else if (sb.toString().length() > 0) {
                             if (!checkStringForHeader(sb.toString())) {
+                                System.out.println("Successfully send by tailer: " + convertToConsumerFormat(sb.toString()));
                                 sendler.sendMsg(convertToConsumerFormat(sb.toString()));
                             }
                             sb.delete(0, sb.length());
