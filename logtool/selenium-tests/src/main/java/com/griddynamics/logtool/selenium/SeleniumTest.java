@@ -1,9 +1,6 @@
 package com.griddynamics.logtool.selenium;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.*;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +36,14 @@ public class SeleniumTest {
         }
     }
 
-    protected void waitForElementIsPresent(By by, int timeout) throws TimeoutException, InterruptedException {
+    protected WebElement waitForElementIsPresent(By by, int timeout) throws TimeoutException, InterruptedException {
         for (int second = 0;; second++) {
             if (second >= timeout) {
-                throw new TimeoutException("Timeout exceeded");
+                throw new TimeoutException("Timeout exceeded! Unable to find requested element.");
             }
             try {
                 if(isElementPresent(by)) {
-                    break;
+                    return driver.findElement(by);
                 }
             } catch (Exception e) {}
             Thread.sleep(1000);
