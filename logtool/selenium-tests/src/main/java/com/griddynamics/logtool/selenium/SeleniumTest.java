@@ -28,6 +28,23 @@ public class SeleniumTest {
         }
     }
 
+    protected void  clickLogAfterInstance(String instance) throws InterruptedException {
+        this.waitForElementIsPresent(By.xpath("//div[starts-with(@id, 'treeview-')]"), 60);
+        WebElement treeview = driver.findElement(By.xpath("//div[starts-with(@id, 'treeview-')]"));
+        int tr = 1;
+            for(;;tr ++) {
+                treeview.findElement(By.xpath("//table/tbody/tr[" + tr + "]"));
+                try {
+                    treeview.findElement(By.xpath("//table/tbody/tr[" + tr + "]/td/div[contains(text(), '" + instance + "')]"));
+                    tr ++;
+                    break;
+                } catch(NoSuchElementException e) {
+                    continue;
+                }
+            }
+            treeview.findElement(By.xpath("//table/tbody/tr[" + tr + "]/td/div/input")).click();
+    }
+
     protected WebElement waitForElementIsPresent(By by, int timeout) throws TimeoutException, InterruptedException {
         for (int second = 0;; second++) {
             if (second >= timeout) {

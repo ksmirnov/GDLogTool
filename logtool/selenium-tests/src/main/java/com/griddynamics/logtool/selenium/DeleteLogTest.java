@@ -4,6 +4,9 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.firefox.FirefoxDriver;
+
+import java.util.concurrent.TimeUnit;
 
 
 public class DeleteLogTest extends SeleniumTest {
@@ -14,23 +17,10 @@ public class DeleteLogTest extends SeleniumTest {
 
     public boolean perform(String tcpHost, int tcpPort) throws Exception {
         Utils.tcpSend(tcpHost, tcpPort, "This message should be deleted", "AppToDel.InstanceToDel", 10, 100);
-        driver.get(uiHost + ":" + uiPort);
-        waitForElementIsPresent(By.xpath("//div[starts-with(@id, 'treeview-')]"), 60);
-        WebElement treeview = driver.findElement(By.xpath("//div[starts-with(@id, 'treeview-')]"));
-        int tr = 1;
+        this.driver.get(uiHost + ":" + uiPort);
         try {
-            for(;;tr ++) {
-                treeview.findElement(By.xpath("//table/tbody/tr[" + tr + "]"));
-                try {
-                    treeview.findElement(By.xpath("//table/tbody/tr[" + tr + "]/td/div[contains(text(), 'InstanceToDel')]"));
-                    tr ++;
-                    break;
-                } catch(NoSuchElementException e) {
-                    continue;
-                }
-            }
-            treeview.findElement(By.xpath("//table/tbody/tr[" + tr + "]/td/div/input")).click();
-        } catch(NoSuchElementException e) {
+            clickLogAfterInstance("InstanceToDel");
+        } catch (NoSuchElementException e){
             logger.error("Unable to find test log");
             return false;
         }
@@ -41,5 +31,4 @@ public class DeleteLogTest extends SeleniumTest {
         return (!this.isElementPresent(By.xpath("//div[contains(text(), 'AppToDel')]")) &&
                 !isElementPresent(By.xpath("//div[contains(text(), 'InstanceToDel')]")));
     }
-    
 }
