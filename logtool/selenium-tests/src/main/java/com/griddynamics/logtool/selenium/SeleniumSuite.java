@@ -2,7 +2,10 @@ package com.griddynamics.logtool.selenium;
 
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -10,17 +13,58 @@ import java.util.concurrent.TimeUnit;
  */
 public class SeleniumSuite {
 
-    public static void main(String[] args) throws Exception {
+    protected static final Logger logger = LoggerFactory.getLogger(SeleniumSuite.class);
+
+    private static String uiHost = "localhost";
+    private static int uiPort = 8088;
+    private static String tcpHost = "localhost";
+    private static int tcpPort = 4444;
+
+    public static void main(String[] args) {
+        StringTokenizer st;
+        switch(args.length) {
+            case 2:
+                st = new StringTokenizer(args[1], ":");
+                if(st.countTokens() == 2) {
+                    tcpHost = st.nextToken();
+                    tcpPort = Integer.valueOf(st.nextToken());
+                }
+            case 1:
+                st = new StringTokenizer(args[0], ":");
+                if(st.countTokens() == 2) {
+                    uiHost = st.nextToken();
+                    uiPort = Integer.valueOf(st.nextToken());
+                }
+        }
         WebDriver webDriver = new FirefoxDriver();
         webDriver.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
-        DeleteDirectoryTest ddt = new DeleteDirectoryTest("localhost", 8088, webDriver);
-        ddt.perform("localhost", 4444);
-        DeleteLogTest dlt = new DeleteLogTest("localhost", 8088, webDriver);
-        dlt.perform("localhost", 4444);
-        AccessingAlertsTest aat = new AccessingAlertsTest("localhost", 8088, webDriver);
-        aat.perform("localhost", 4444);
-        MarkingAlertsTest mat = new MarkingAlertsTest("localhost", 8088, webDriver);
-        mat.perform("localhost", 4444);
+        DeleteLogTest dlt = new DeleteLogTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(dlt);
+        DeleteDirectoryTest ddt = new DeleteDirectoryTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(ddt);
+        GrepSearchTest gst = new GrepSearchTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(gst);
+        SolrSearchTest sst = new SolrSearchTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(sst);
+        AccessingAlertsTest aat = new AccessingAlertsTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(aat);
+        MarkingAlertsTest mat = new MarkingAlertsTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(mat);
         webDriver.quit();
+    }
+
+    private static void printResult(SeleniumTest test) {
+        logger.info("PERFORMING " + test.getClass().getSimpleName() + "...");
+        boolean result = false;
+        try {
+            result = test.perform();
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        if(result) {
+            logger.info("RESULT: SUCCESS");
+        } else {
+            logger.info("RESULT: FAILED");
+        }
     }
 }

@@ -11,11 +11,11 @@ import java.util.Map;
 
 public class MarkingAlertsTest extends SeleniumTest {
 
-    public MarkingAlertsTest(String uiHost, int uiPort, WebDriver webDriver) {
-        super(uiHost, uiPort, webDriver);
+    public MarkingAlertsTest(String uiHost, int uiPort, String tcpHost, int tcpPort, WebDriver webDriver) {
+        super(uiHost, uiPort, tcpHost, tcpPort, webDriver);
     }
 
-    public boolean perform(String tcpHost, int tcpPort) throws Exception {
+    public boolean perform() throws Exception {
         boolean out;
         Map<String, String> params = new HashMap<String, String>();
         params.put("action", "alertsAction");
@@ -41,7 +41,7 @@ public class MarkingAlertsTest extends SeleniumTest {
         params.put("action", "alertsAction");
         params.put("filter", ".*SELENIUM_TEST.*");
         params.put("subaction", "removeFilter");
-        //Utils.httpGet(this.uiHost, this.uiPort, params);
+        Utils.httpGet(this.uiHost, this.uiPort, params);
         Utils.deleteDirectory(uiHost, uiPort, "Selenium");
         return out;
     }
