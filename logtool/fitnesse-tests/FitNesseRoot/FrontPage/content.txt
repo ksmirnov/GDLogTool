@@ -13,5 +13,5 @@
 | [[Searching using grep only][SuitePage.GrepSearchTest]]|''Create log and grep some text in it''|
 | [[Searching via Solr][SuitePage.SolrSearchTest]]|''Send some messages and then search data using Solr query''|
 | [[Grepping over Solr search][SuitePage.GrepOverSolrTest]]|''Send some messages and then search data using Solr query combined with grep''|
-
+| [[Ssh Tailer Test][SuitePage.SshTailerTest]]|''Write some string in file by ssh and then check for this string in LogTool''|
 To perform all tests use [[suite page][SuitePage]].

@@ -1,0 +1,34 @@
+Sendler sends specified messages through UDP.
+Host - host where server's started on
+Port - UDP listener's port
+!*****< Importing fixtures package
+|Import|
+|com.griddynamics.logtool.fixtures|
+******!
+!|SshFixture|
+|Set host to read from|localhost|
+|Set path to file|/home/slivotov/blakie.txt|
+|Set user to read from|slivotov|
+|Set host to send|172.18.128.46|
+|Set port to send|4445|
+|Create file by ssh|
+|Start ssh tailer watching|
+|Write message to file|This is message for ssh test|
+|Delete file by ssh|
+|Stop ssh tailer watching|
+
+
+The following fixture checks if ssh-tailer works correct.
+Host and port - address of http server
+
+!|SolrSearchFixture|
+|Set host|localhost|
+|Set port|8088|
+|Check search with request|content: ssh|have|1|finding|
+
+!*****< Clearing server after test
+!|SshFixture|
+|Set host to send|localhost|
+|Set port to send|8088|
+|delete log|ssh|
+******!
