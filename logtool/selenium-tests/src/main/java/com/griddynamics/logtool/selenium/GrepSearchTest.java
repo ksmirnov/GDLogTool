@@ -1,15 +1,14 @@
 package com.griddynamics.logtool.selenium;
 
+import com.thoughtworks.selenium.Selenium;
 import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.WebDriverBackedSelenium;
 
-import java.util.concurrent.TimeUnit;
 
-public class SolrSearchTest extends SeleniumTest {
+public class GrepSearchTest extends SeleniumTest {
 
-    public SolrSearchTest(String uiHost, int uiPort, WebDriver webDriver) {
+        public GrepSearchTest(String uiHost, int uiPort, WebDriver webDriver) {
         super(uiHost, uiPort, webDriver);
     }
 
@@ -18,23 +17,17 @@ public class SolrSearchTest extends SeleniumTest {
             Utils.tcpSend(tcpHost, tcpPort, "Selenium fast message", "SeleniumTestApp.SeleniumInst", 10, 100);
             Thread.sleep(100);
             driver.get(uiHost + ":" + uiPort);
+            clickLogAfterInstance("SeleniumInst");
             driver.findElement(By.xpath("//span[contains(text(), 'Search')]")).click();
-            driver.findElement(By.xpath("//input[@role='textbox']")).sendKeys("fast");
+            driver.findElement(By.xpath("//input[@role='textbox']")).sendKeys("grep: fast");
             driver.findElement(By.xpath("//div[@class='x-toolbar x-window-item x-toolbar-footer " +
                     "x-docked x-docked-bottom x-toolbar-docked-bottom x-toolbar-footer-docked-bottom " +
                     "x-box-layout-ct']//span[contains(text(), 'Search')]")).click();
-            waitForElementIsPresent(By.xpath("//div[@id='searchResGrid']//table//tr[1]"), 50);
-            int tr = 2;
-            while(true){
-                try{
-                    driver.findElement(By.xpath("//div[@id='searchResGrid']//table//tr[" + tr + "]"));
-                    tr++;
-                } catch (NoSuchElementException e){
-                    break;
-                }
-            }
+            waitForElementIsPresent(By.xpath("//div[@id='searchResGrid']//table//tr[2]//td[2]//div"), 50);
+            Selenium selenium = new WebDriverBackedSelenium(driver, uiHost + ":" + uiPort);
+            int count = Integer.parseInt(selenium.getText("xpath=//div[@id='searchResGrid']//table//tr[2]//td[2]//div"));
             Utils.deleteDirectory(uiHost, uiPort, "SeleniumTestApp");
-            if(tr == 12) {
+            if(count == 10) {
                 return true;
             } else {
                 return false;
