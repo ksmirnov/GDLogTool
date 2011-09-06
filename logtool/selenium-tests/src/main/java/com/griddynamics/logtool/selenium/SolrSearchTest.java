@@ -3,17 +3,13 @@ package com.griddynamics.logtool.selenium;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-
-import java.util.concurrent.TimeUnit;
 
 public class SolrSearchTest extends SeleniumTest {
-
-    public SolrSearchTest(String uiHost, int uiPort, WebDriver webDriver) {
-        super(uiHost, uiPort, webDriver);
+    public SolrSearchTest(String uiHost, int uiPort, String tcpHost, int tcpPort, WebDriver webDriver) {
+        super(uiHost, uiPort, tcpHost, tcpPort, webDriver);
     }
 
-    public boolean perform(String tcpHost, int tcpPort) {
+    public boolean perform() {
         try {
             Utils.tcpSend(tcpHost, tcpPort, "Selenium fast message", "SeleniumTestApp.SeleniumInst", 10, 100);
             Thread.sleep(100);

@@ -5,19 +5,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class SeleniumTest {
+public abstract class SeleniumTest {
 
     protected static final Logger logger = LoggerFactory.getLogger(SeleniumTest.class);
 
     protected WebDriver driver;
     protected String uiHost;
     protected int uiPort;
+    protected String tcpHost;
+    protected int tcpPort;
 
-    public SeleniumTest(String uiHost, int uiPort, WebDriver webDriver) {
+    public SeleniumTest(String uiHost, int uiPort, String tcpHost, int tcpPort, WebDriver webDriver) {
         this.uiHost = uiHost;
         this.uiPort = uiPort;
+        this.tcpHost = tcpHost;
+        this.tcpPort = tcpPort;
         driver = webDriver;
     }
+
+    public abstract boolean perform() throws Exception;
 
     protected boolean isElementPresent(By by) {
         try {

@@ -7,12 +7,12 @@ import org.openqa.selenium.WebDriverBackedSelenium;
 
 
 public class GrepSearchTest extends SeleniumTest {
-
-        public GrepSearchTest(String uiHost, int uiPort, WebDriver webDriver) {
-        super(uiHost, uiPort, webDriver);
+    
+    public GrepSearchTest(String uiHost, int uiPort, String tcpHost, int tcpPort, WebDriver webDriver) {
+        super(uiHost, uiPort, tcpHost, tcpPort, webDriver);
     }
 
-    public boolean perform(String tcpHost, int tcpPort) {
+    public boolean perform() {
         try {
             Utils.tcpSend(tcpHost, tcpPort, "Selenium fast message", "SeleniumTestApp.SeleniumInst", 10, 100);
             Thread.sleep(100);
