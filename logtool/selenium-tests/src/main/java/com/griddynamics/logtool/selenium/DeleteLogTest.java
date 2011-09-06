@@ -14,8 +14,8 @@ public class DeleteLogTest extends SeleniumTest {
 
     public boolean perform(String tcpHost, int tcpPort) throws Exception {
         Utils.tcpSend(tcpHost, tcpPort, "This message should be deleted", "AppToDel.InstanceToDel", 10, 100);
-        this.driver.get(uiHost + ":" + uiPort);
-        this.waitForElementIsPresent(By.xpath("//div[starts-with(@id, 'treeview-')]"), 60);
+        driver.get(uiHost + ":" + uiPort);
+        waitForElementIsPresent(By.xpath("//div[starts-with(@id, 'treeview-')]"), 60);
         WebElement treeview = driver.findElement(By.xpath("//div[starts-with(@id, 'treeview-')]"));
         int tr = 1;
         try {
