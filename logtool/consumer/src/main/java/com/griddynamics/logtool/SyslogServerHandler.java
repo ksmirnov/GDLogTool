@@ -3,6 +3,7 @@ package com.griddynamics.logtool;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.group.ChannelGroup;
+import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 public class SyslogServerHandler extends SimpleChannelHandler {
     private static final Logger logger = LoggerFactory.getLogger(SyslogServerHandler.class);
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     private final Storage storage;
     private final SearchServer searchServer;
@@ -49,6 +51,11 @@ public class SyslogServerHandler extends SimpleChannelHandler {
         Map<String,String> msg = messageParser.parseMessage(receivedMessage.toString());
         if(msg.get("content") == null){
             msg.put("content",receivedMessage.toString());
+        }
+        if(msg.get("timestamp") == null){
+           DateTime dt = new DateTime();
+           String timestamp = dateTimeFormatter.print(dt);
+           msg.put("timestamp",timestamp);
         }
         String [] path = new String[3];
         path[0] = msg.get("application");

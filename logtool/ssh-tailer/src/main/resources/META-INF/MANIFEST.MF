@@ -1,0 +1,4 @@
+Built-By: slivotov
+Build-Jdk: 1.6.0_26
+Main-Class: com.griddynamics.logtool.agents.SshTailer
+Class-Path: bcprov-jdk16-146.jar slf4j-api-1.6.1.jar slf4j-simple-1.6.1.jar sshj-0.5.0.jar
