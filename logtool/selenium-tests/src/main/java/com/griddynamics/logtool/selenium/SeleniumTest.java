@@ -16,11 +16,10 @@ public class SeleniumTest {
     protected String uiHost;
     protected int uiPort;
 
-    public SeleniumTest(String uiHost, int uiPort) {
+    public SeleniumTest(String uiHost, int uiPort, WebDriver webDriver) {
         this.uiHost = uiHost;
         this.uiPort = uiPort;
-        driver = new FirefoxDriver();
-        driver.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
+        driver = webDriver;
     }
 
     public void tearDown() throws Exception {

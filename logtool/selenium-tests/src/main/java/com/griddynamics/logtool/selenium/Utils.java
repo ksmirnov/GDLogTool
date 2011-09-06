@@ -80,7 +80,7 @@ public class Utils {
             logger.info(message + " " + i);
             Thread.sleep(delay);
         }
-        appender.close();
+        appender.cleanUp();
     }
 
     public static void udpSend (String host, int port, String message, String application, String instance, int amount,
