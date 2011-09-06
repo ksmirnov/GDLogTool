@@ -1,33 +1,52 @@
 package com.griddynamics.logtool.selenium;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.*;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
 
-public abstract class SeleniumTest {
+public class SeleniumTest {
 
-    private WebDriver driver;
+    protected static final Logger logger = LoggerFactory.getLogger(SeleniumTest.class);
 
+    protected WebDriver driver;
+    protected String uiHost;
+    protected int uiPort;
 
-    public void setUp() throws Exception {
+    public SeleniumTest(String uiHost, int uiPort) {
+        this.uiHost = uiHost;
+        this.uiPort = uiPort;
         driver = new FirefoxDriver();
-        driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+        driver.manage().timeouts().implicitlyWait(0, TimeUnit.SECONDS);
     }
 
     public void tearDown() throws Exception {
         driver.quit();
     }
 
-    private boolean isElementPresent(By by) {
+    protected boolean isElementPresent(By by) {
         try {
             driver.findElement(by);
             return true;
         } catch (NoSuchElementException e) {
             return false;
+        }
+    }
+
+    protected WebElement waitForElementIsPresent(By by, int timeout) throws TimeoutException, InterruptedException {
+        for (int second = 0;; second++) {
+            if (second >= timeout) {
+                throw new TimeoutException("Timeout exceeded! Unable to find requested element.");
+            }
+            try {
+                if(isElementPresent(by)) {
+                    return driver.findElement(by);
+                }
+            } catch (Exception e) {}
+            Thread.sleep(1000);
         }
     }
 }

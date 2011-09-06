@@ -1,7 +1,5 @@
 package com.griddynamics.logtool;
 
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -16,7 +14,7 @@ import java.io.*;
 import java.util.*;
 
 public class Consumer {
-    private static final Logger logger = LoggerFactory.getLogger(Log4jEventsHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
     private Map<Integer, SyslogServer> syslogServers = new HashMap<Integer, SyslogServer>();
     Log4jEventsServer log4jEventsServer;
     private long lastCheckConfFile = 0;
