@@ -8,12 +8,15 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import java.util.concurrent.TimeUnit;
 
 
-public abstract class SeleniumTest {
+public class SeleniumTest {
 
-    private WebDriver driver;
+    protected WebDriver driver;
+    protected String uiHost;
+    protected int uiPort;
 
-
-    public void setUp() throws Exception {
+    public SeleniumTest(String uiHost, int uiPort) {
+        this.uiHost = uiHost;
+        this.uiPort = uiPort;
         driver = new FirefoxDriver();
         driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
     }
@@ -22,7 +25,7 @@ public abstract class SeleniumTest {
         driver.quit();
     }
 
-    private boolean isElementPresent(By by) {
+    protected boolean isElementPresent(By by) {
         try {
             driver.findElement(by);
             return true;

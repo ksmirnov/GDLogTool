@@ -16,7 +16,7 @@ import java.io.*;
 import java.util.*;
 
 public class Consumer {
-    private static final Logger logger = LoggerFactory.getLogger(Log4jEventsHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
     private Map<Integer, SyslogServer> syslogServers = new HashMap<Integer, SyslogServer>();
     Log4jEventsServer log4jEventsServer;
     private long lastCheckConfFile = 0;
