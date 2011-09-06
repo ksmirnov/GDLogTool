@@ -17,6 +17,10 @@ public class SeleniumSuite {
         ddt.perform("localhost", 4444);
         DeleteLogTest dlt = new DeleteLogTest("localhost", 8088, webDriver);
         dlt.perform("localhost", 4444);
-
+        AccessingAlertsTest aat = new AccessingAlertsTest("localhost", 8088, webDriver);
+        aat.perform("localhost", 4444);
+        MarkingAlertsTest mat = new MarkingAlertsTest("localhost", 8088, webDriver);
+        mat.perform("localhost", 4444);
+        webDriver.quit();
     }
 }
