@@ -50,6 +50,14 @@ public class SeleniumSuite {
         printResult(aat);
         MarkingAlertsTest mat = new MarkingAlertsTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
         printResult(mat);
+        GetLogTest glt = new GetLogTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(glt);
+        LogPagesNavigatingTest lpnt = new LogPagesNavigatingTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(lpnt);
+        AutorefreshingLogTest alt = new AutorefreshingLogTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(alt);
+        GetSubscribersListTest gslt = new GetSubscribersListTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(gslt);
         webDriver.quit();
     }
 
