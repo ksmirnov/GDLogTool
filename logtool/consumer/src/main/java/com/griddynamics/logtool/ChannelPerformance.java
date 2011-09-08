@@ -3,16 +3,16 @@ package com.griddynamics.logtool;
 public class ChannelPerformance {
 
     private int recieved;
-    private volatile long startTime;
-    private volatile long endTime;
+    private volatile long firstReceived;
+    private volatile long lastRecieved;
     private int exceptions;
-    private int averageLatency;
+    private volatile long averageLatency;
 
-    public int getAverageLatency() {
+    public long getAverageLatency() {
         return averageLatency;
     }
 
-    public void setAverageLatency(int averageLatency) {
+    public void setAverageLatency(long averageLatency) {
         this.averageLatency = averageLatency;
     }
 
@@ -20,20 +20,20 @@ public class ChannelPerformance {
         return recieved;
     }
 
-    public long getStartTime() {
-        return startTime;
+    public long getFirstReceived() {
+        return firstReceived;
     }
 
-    public void setStartTime(long startTime) {
-        this.startTime = startTime;
+    public void setFirstReceived(long firstReceived) {
+        this.firstReceived = firstReceived;
     }
 
-    public long getEndTime() {
-        return endTime;
+    public long getLastRecieved() {
+        return lastRecieved;
     }
 
-    public void setEndTime(long endTime) {
-        this.endTime = endTime;
+    public void setLastRecieved(long lastRecieved) {
+        this.lastRecieved = lastRecieved;
     }
 
     public int getExceptions() {
