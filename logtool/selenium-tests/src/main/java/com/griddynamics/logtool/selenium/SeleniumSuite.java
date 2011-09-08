@@ -58,6 +58,10 @@ public class SeleniumSuite {
         printResult(alt);
         GetSubscribersListTest gslt = new GetSubscribersListTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
         printResult(gslt);
+        AccessingTreeTest att = new AccessingTreeTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(att);
+        DeletingAlertsFilterTest daft = new DeletingAlertsFilterTest(uiHost, uiPort, tcpHost, tcpPort, webDriver);
+        printResult(daft);
         webDriver.quit();
     }
 
