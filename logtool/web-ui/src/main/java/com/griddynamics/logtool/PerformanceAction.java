@@ -1,5 +1,7 @@
 package com.griddynamics.logtool;
 
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -15,12 +17,9 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
 import java.util.Map;
 
-/**
- * File def
- *
- * @author ksmirnov
- */
 public class PerformanceAction extends Action{
+
+    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss,SSS");
 
     @Override
     public void perform(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -42,8 +41,8 @@ public class PerformanceAction extends Action{
                     channel.setAttribute("name", s);
                     root.appendChild(channel);
                     appendSimpleChild(doc, channel, "recieved", String.valueOf(perf.getRecieved()));
-                    appendSimpleChild(doc, channel, "startTime", String.valueOf(perf.getStartTime()));
-                    appendSimpleChild(doc, channel, "endTime", String.valueOf(perf.getEndTime()));
+                    appendSimpleChild(doc, channel, "firstReceived", formatter.print(perf.getFirstReceived()));
+                    appendSimpleChild(doc, channel, "lastReceived", formatter.print(perf.getLastRecieved()));
                     appendSimpleChild(doc, channel, "exceptions", String.valueOf(perf.getExceptions()));
                     appendSimpleChild(doc, channel, "averageLatency", String.valueOf(perf.getAverageLatency()));
                 }
