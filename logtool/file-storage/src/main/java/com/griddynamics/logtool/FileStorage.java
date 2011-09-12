@@ -472,7 +472,7 @@ public class FileStorage implements Storage {
     private Tree createTreeFromDisk(String path) {
         File file = new File(path);
         File[] dirs = file.listFiles();
-        if (dirs == null) {
+        if (dirs == null || dirs.length == 0) {
             return new Tree();
         }
         boolean hasOnlyFiles = true;
