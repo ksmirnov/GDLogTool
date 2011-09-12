@@ -51,7 +51,6 @@
             <artifactId>joda-time</artifactId>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
@@ -75,6 +74,87 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>maven-jetty-plugin</artifactId>
+                        <version>6.1.10</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sourceforge.cobertura</groupId>
+                                <artifactId>cobertura</artifactId>
+                                <version>1.9.4.1</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <scanIntervalSeconds>10</scanIntervalSeconds>
+
+                            <contextPath>/</contextPath>
+                            <stopKey>stopKey</stopKey>
+                            <stopPort>8888</stopPort>
+                            <connectors>
+                                <connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
+                                    <port>8088</port>
+                                    <maxIdleTime>60000</maxIdleTime>
+                                </connector>
+                            </connectors>
+                            <classesDirectory>./target/generated-classes/cobertura</classesDirectory>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sourceforge.cobertura</groupId>
+                                <artifactId>cobertura</artifactId>
+                                <version>1.9.4.1</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>merge-cobertura-datafiles</id>
+                                <phase>process-test-classes</phase>
+                                <configuration>
+                                    <tasks>
+                                        <taskdef
+                                            classpathref="maven.runtime.classpath"
+                                            resource="tasks.properties" />
+                                        <cobertura-merge
+                                            datafile="${project.build.directory}/cobertura/cobertura.ser">
+                                            <fileset dir="../">
+                                                <include
+                                                    name="consumer/target/cobertura/cobertura.ser" />
+                                                <include
+                                                    name="file-storage/target/cobertura/cobertura.ser" />
+                                                <include
+                                                    name="filetailer/target/cobertura/cobertura.ser" />
+                                                <include
+                                                    name="search-server/target/cobertura/cobertura.ser" />
+                                                <include
+                                                    name="ssh-tailer/target/cobertura/cobertura.ser" />
+                                                <include
+                                                    name="udp-sendler/target/cobertura/cobertura.ser" />
+                                                <include
+                                                    name="web-ui/target/cobertura/cobertura.ser" />
+                                            </fileset>
+                                        </cobertura-merge>
+                                    </tasks>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
 
 

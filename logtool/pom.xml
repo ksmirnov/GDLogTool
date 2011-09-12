@@ -50,6 +50,7 @@
         <fitlibraryVersion>20081102</fitlibraryVersion>
         <jsonsimpleVersion>1.1</jsonsimpleVersion>
         <seleniumVersion>2.5.0</seleniumVersion>
+        <coberturaVersion>1.9.4.1</coberturaVersion>
     </properties>
 
     <dependencyManagement>
@@ -212,6 +213,12 @@
                 <artifactId>selenium-java</artifactId>
                 <version>${seleniumVersion}</version>
             </dependency>
+
+            <dependency>
+                <groupId>net.sourceforge.cobertura</groupId>
+                <artifactId>cobertura</artifactId>
+                <version>${coberturaVersion}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -231,14 +238,76 @@
     <build>
         <plugins>
             <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-                <source>1.6</source>
-                <target>1.6</target>
-            </configuration>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>1.6</source>
+                        <target>1.6</target>
+                    </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>cobertura-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>cobertura-instrument</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>instrument</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>cobertura-jar</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classesDirectory>./target/generated-classes/cobertura</classesDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-install-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>cobertura-install</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>install</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
 

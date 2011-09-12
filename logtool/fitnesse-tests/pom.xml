@@ -74,4 +74,15 @@
             <version>1.46</version>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+            <id>coverage</id>
+            <dependencies>
+                <dependency>
+                    <groupId>net.sourceforge.cobertura</groupId>
+                    <artifactId>cobertura</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
