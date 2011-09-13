@@ -54,7 +54,8 @@ public class Log4jEventsHandlerTest {
         List testEventsList = new ArrayList();
         testEventsList.add(testEvent);
 
-        InetSocketAddress testAddress = new InetSocketAddress("testhost", 4444);
+        InetSocketAddress testAddress = new InetSocketAddress("localhost", 4444);
+        System.out.println(testAddress.getAddress());
 
         ChannelHandlerContext testCtx = mock(ChannelHandlerContext.class);
         Channel testChannel = mock(Channel.class);
@@ -69,7 +70,7 @@ public class Log4jEventsHandlerTest {
 
         String[] pathToVerify = new String[3];
         pathToVerify[0] = "testApp";
-        pathToVerify[1] = "testhost";
+        pathToVerify[1] = "localhost";
         pathToVerify[2] = "testInstance";
         message = timeFormatter.print(datetime) + " " + message;
         verify(mockedStorage).addMessage(pathToVerify, timestamp, message);
