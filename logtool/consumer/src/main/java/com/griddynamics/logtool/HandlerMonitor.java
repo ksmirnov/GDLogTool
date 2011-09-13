@@ -17,7 +17,7 @@ public class HandlerMonitor extends SimpleChannelHandler {
     }
 
     public String buildKey(ChannelHandlerContext ctx) {
-        return ctx.getChannel().getClass().getName() + ", id = " + ctx.getChannel().getId();
+        return ctx.getChannel().getClass().getSimpleName() + ", id = " + ctx.getChannel().getId();
     }
 
     @Override
@@ -44,19 +44,24 @@ public class HandlerMonitor extends SimpleChannelHandler {
         if(perf == null) {
             perf = addChannel(buildKey(ctx));
         }
+        int receivedBefore = perf.getRecieved();
         if(e.getMessage() instanceof List) {
             perf.addRecieved(((List)e.getMessage()).size());
         } else {
             perf.addRecieved(1);
         }
-        long initTime = System.currentTimeMillis();
-        if(perf.getStartTime() == 0) {
-            perf.setStartTime(initTime);
+        if(perf.getFirstReceived() == 0) {
+            perf.setFirstReceived(System.currentTimeMillis());
         }
+        long initTime = System.nanoTime();
         handler.messageReceived(ctx, e);
-        long endTime = System.currentTimeMillis();
-        perf.setEndTime(endTime);
-        perf.setAverageLatency((int)(perf.getAverageLatency() * perf.getRecieved() + endTime - initTime) / (perf.getRecieved() + 1));
+        long endTime = System.nanoTime();
+        perf.setAverageLatency(
+                (
+                        perf.getAverageLatency() * receivedBefore + endTime - initTime
+                ) / perf.getRecieved()
+        );
+        perf.setLastRecieved(System.currentTimeMillis());
     }
 
     @Override
