@@ -2,6 +2,7 @@ package com.griddynamics.logtool;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -79,22 +80,17 @@ public class SearchServerImpl implements SearchServer {
     }
 
     @Override
-    public List<Map<String, String>> search(String query) {
-        try {
-            server.commit();
-            docsCounter.set(0);
-        } catch (Exception e) {
-            logger.error("Unable to commit documents before perform search query", e);
-        }
+    public List<Map<String, String>> search(String query, int start, int amount, String sortField, String order) {
         SolrQuery solrQuery = new SolrQuery(query);
-        solrQuery.setRows(Integer.MAX_VALUE);
-        QueryResponse resp;
-        try {
-            resp = server.query(solrQuery);
-        } catch (Exception e) {
-            logger.error("Search query failed", e);
-            return null;
+        if (start != -1) {
+            solrQuery.setRows(amount);
+            solrQuery.setStart(start);
+            solrQuery.setSortField(sortField, SolrQuery.ORDER.valueOf(order));
+        } else {
+            solrQuery.setRows(Integer.MAX_VALUE);
         }
+
+        QueryResponse resp = search0(solrQuery);
         SolrDocumentList docs = resp.getResults();
         List out = new ArrayList();
         if(docs != null) {
@@ -107,6 +103,49 @@ public class SearchServerImpl implements SearchServer {
             }
         }
         return out;
+    }
+
+    protected QueryResponse search0(SolrQuery query) {
+        try {
+            server.commit();
+            docsCounter.set(0);
+        } catch (Exception e) {
+            logger.error("Unable to commit documents before perform search query", e);
+        }
+        QueryResponse out;
+        try {
+            out = server.query(query);
+            return out;
+        } catch (Exception e) {
+            logger.error("Search query failed", e);
+            return null;
+        }
+
+    }
+
+    @Override
+    public Set<Facet> getFacets(String query) {
+        SolrQuery solrQuery = new SolrQuery("*:*");
+        solrQuery.setFacet(true);
+        if(query != null && !query.isEmpty()) {
+            solrQuery.addFilterQuery(query);
+        }
+        solrQuery.addFacetField("host", "application", "instance", "level");
+        solrQuery.setRows(0);
+        QueryResponse resp = search0(solrQuery);
+        if(resp != null) {
+            Set<Facet> out = new HashSet<Facet>();
+            for(FacetField ff : resp.getFacetFields()) {
+                Facet current = new Facet(ff.getName());
+                if(ff.getValues() != null) {
+                    for(FacetField.Count c : ff.getValues()) {
+                        current.addCount(c.getName(), c.getCount());
+                    }
+                    out.add(current);
+                }
+            }
+            return out;
+        } else return null;
     }
 
     @Override

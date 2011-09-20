@@ -47,13 +47,13 @@ public class SearchServerImplTest {
 
     @Test
     public void testEmptySearch() {
-        List<Map<String, String>> result = searchServer.search("path:nonexistent");
+        List<Map<String, String>> result = searchServer.search("path:nonexistent", -1, 0, "", "");
         assertTrue(result.isEmpty());
     }
 
     @Test
     public void testIndexAndSearch() {
-        List<Map<String, String>> result = searchServer.search("path:\"some path\"");
+        List<Map<String, String>> result = searchServer.search("path:\"some path\"", -1, 0, "", "");
         for(Map<String, String> entry : result) {
             assertTrue(entry.get("path").equals("some path"));
             assertTrue(entry.get("startIndex").equals("0"));
@@ -65,7 +65,7 @@ public class SearchServerImplTest {
     @Test
     public void testDelete() {
         searchServer.delete("path:\"some path\"");
-        List<Map<String, String>> result = searchServer.search("path:\"some path\"");
+        List<Map<String, String>> result = searchServer.search("path:\"some path\"", -1, 0, "", "");
         assertTrue(result.isEmpty());
     }
 
