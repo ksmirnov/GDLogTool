@@ -13,4 +13,8 @@
         <property name="testMode" value="false"/>
     </bean>
 
+    <bean id="Rest" class="com.griddynamics.logtool.LogRest">
+        <property name="storage" ref="fileStorage"/>
+        <property name="searchServer" ref="searchServer"/>
+    </bean>
 </beans>

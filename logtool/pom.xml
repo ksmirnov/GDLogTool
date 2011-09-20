@@ -51,6 +51,7 @@
         <jsonsimpleVersion>1.1</jsonsimpleVersion>
         <seleniumVersion>2.5.0</seleniumVersion>
         <coberturaVersion>1.9.4.1</coberturaVersion>
+        <jbossResteasyVersion>2.2.1.GA</jbossResteasyVersion>
     </properties>
 
     <dependencyManagement>
@@ -218,6 +219,11 @@
                 <groupId>net.sourceforge.cobertura</groupId>
                 <artifactId>cobertura</artifactId>
                 <version>${coberturaVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.resteasy</groupId>
+                <artifactId>resteasy-spring</artifactId>
+                <version>${jbossResteasyVersion}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
