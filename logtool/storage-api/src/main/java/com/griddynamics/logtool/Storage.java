@@ -169,4 +169,8 @@ public interface Storage {
      * @throws IOException - Throws IOException if has some problems with input
      */
     void getLogNew(String[] path, String name, long startPos, int length, OutputStream outputStream) throws IOException;
+
+    boolean checkIfExists(String[] path);
+
+    boolean checkIsFile(String[] path);
 }

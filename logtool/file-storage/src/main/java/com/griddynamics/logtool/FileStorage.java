@@ -314,6 +314,20 @@ public class FileStorage implements Storage {
     }
 
     @Override
+    public boolean checkIfExists(String[] path) {
+        String[] clearPath = removeNullAndEmptyPathSegments(path);
+        String logPath = buildPath(clearPath);
+        return new File(logPath).exists();
+    }
+
+    @Override
+    public boolean checkIsFile(String[] path) {
+        String[] clearPath = removeNullAndEmptyPathSegments(path);
+        String logPath = buildPath(clearPath);
+        return new File(logPath).isFile();
+    }
+
+    @Override
     public synchronized String deleteLog(String[] path, String name) {
         if (isBlank(name)) {
             return null;
