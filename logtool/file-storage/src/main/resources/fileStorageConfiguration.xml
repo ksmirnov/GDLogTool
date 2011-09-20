@@ -14,5 +14,6 @@
         <property name="alertingEmail" value="${alertingEmail}"/>
         <property name="alertingPassword" value="${alertingPassword}"/>
         <property name="bufferSize" value="${bufferSize}"/>
+        <property name="alertsLimit" value="${alertsLimit}"/>
     </bean>
 </beans>

@@ -12,9 +12,12 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class Consumer {
     private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
+    public static ConcurrentMap<String, String> hostNameMap = new ConcurrentHashMap<String, String>();
     private Map<Integer, SyslogServer> syslogServers = new HashMap<Integer, SyslogServer>();
     Log4jEventsServer log4jEventsServer;
     private long lastCheckConfFile = 0;

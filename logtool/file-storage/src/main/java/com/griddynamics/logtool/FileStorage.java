@@ -43,6 +43,7 @@ public class FileStorage implements Storage {
     private Lock subscribersLock = new ReentrantLock(true);
     private Lock alertsLock = new ReentrantLock(true);
     private Lock quotaAlertsLock = new ReentrantLock(true);
+    private int alertsLimit;
 
     @Required
     public void setBufferSize(int bufferSize) {
@@ -52,6 +53,11 @@ public class FileStorage implements Storage {
     @Required
     public void setAlertingEmail(String alertingEmail) {
         this.alertingEmail = alertingEmail;
+    }
+
+    @Required
+    public void setAlertsLimit(int alertsLimit) {
+        this.alertsLimit = alertsLimit;
     }
 
     @Required
@@ -700,9 +706,17 @@ public class FileStorage implements Storage {
         try {
             alertsLock.lock();
             if (!alerts.containsKey(filter)) {
-                alerts.put(filter, new HashSet<String>());
+                alerts.put(filter, new LinkedHashSet<String>());
             }
-            alerts.get(filter).add(message);
+            Set alertsByFilter = alerts.get(filter);
+            if (alertsByFilter.size() != alertsLimit){
+                alertsByFilter.add(message);
+            } else {
+                Iterator it = alertsByFilter.iterator();
+                it.next();
+                it.remove();
+                alertsByFilter.add(message);
+            }
         } finally {
             alertsLock.unlock();
         }

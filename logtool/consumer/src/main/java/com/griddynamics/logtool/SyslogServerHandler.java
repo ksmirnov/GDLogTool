@@ -39,7 +39,12 @@ public class SyslogServerHandler extends SimpleChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws IllegalArgumentException {
         String host;
         if(e.getRemoteAddress() instanceof InetSocketAddress) {
-            host = ((InetSocketAddress) e.getRemoteAddress()).getHostName();
+            String inetSAddrToStr = ((InetSocketAddress) e.getRemoteAddress()).getAddress().toString();
+            host = Consumer.hostNameMap.get(inetSAddrToStr);
+            if(host == null) {
+                host = ((InetSocketAddress) e.getRemoteAddress()).getHostName();
+                Consumer.hostNameMap.putIfAbsent(inetSAddrToStr,host);
+            }
         } else {
             host = e.getRemoteAddress().toString();
         }
@@ -49,6 +54,7 @@ public class SyslogServerHandler extends SimpleChannelHandler {
             receivedMessage.append((char) buf.readByte());
         }
         Map<String,String> msg = messageParser.parseMessage(receivedMessage.toString());
+        msg.put("host", host);
         if(msg.get("content") == null){
             msg.put("content",receivedMessage.toString());
         }

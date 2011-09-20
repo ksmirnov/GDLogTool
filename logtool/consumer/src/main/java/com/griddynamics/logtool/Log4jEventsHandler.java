@@ -40,7 +40,12 @@ public class Log4jEventsHandler extends SimpleChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws IllegalArgumentException {
         String host;
         if(e.getRemoteAddress() instanceof InetSocketAddress) {
-            host = ((InetSocketAddress) e.getRemoteAddress()).getHostName();
+            String inetSAddrToStr = ((InetSocketAddress) e.getRemoteAddress()).getAddress().toString();
+            host = Consumer.hostNameMap.get(inetSAddrToStr);
+            if(host == null) {
+                host = ((InetSocketAddress) e.getRemoteAddress()).getHostName();
+                Consumer.hostNameMap.putIfAbsent(inetSAddrToStr,host);
+            }
         } else {
             host = e.getRemoteAddress().toString();
         }
