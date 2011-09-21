@@ -29,7 +29,7 @@
         <dynamicField name="*"    type="string"   indexed="true"  stored="true"  multiValued="true"  />
     </fields>
 
-    <solrQueryParser defaultOperator="AND"/>
+    <solrQueryParser defaultOperator="OR"/>
     <defaultSearchField>content</defaultSearchField>
 
 </schema>

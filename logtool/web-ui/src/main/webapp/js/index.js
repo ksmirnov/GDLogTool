@@ -29,6 +29,7 @@ Ext.onReady(function() {
     var searchLogTotalPages = 0;
     var contentFilter = '';
     var facetFilter = '';
+    var filters = {};
 
     var solrSearchOccurrences = [];
     var isSolrSearch = false;
@@ -56,9 +57,27 @@ Ext.onReady(function() {
         }
     }
 
+    function addCustomDate() {
+        var node = facetsPanel.getRootNode().findChild('text', 'timestamp');
+        node.appendChild({
+            text: 'custom',
+            leaf: true,
+            checked: false
+        });
+    }
+
     function refreshTree() {
         treestore.load();
-        facetsStore.load();
+        if(searchField.getValue()) {
+            contentFilter = 'content:' + searchField.getValue();
+            var operation = new Ext.data.Operation({
+                action: 'read',
+                page: contentFilter
+            });
+            facetsStore.load(operation);
+        } else {
+            facetsStore.load();
+        }
     }
 
     function mergeLogs() {
@@ -179,21 +198,185 @@ Ext.onReady(function() {
     function facetSelected() {
         clearText();
         facetFilter = '';
+        filters = {};
         var view = facetsPanel.getView();
         var records = view.getChecked();
+        var selected = view.getSelectionModel().getSelection();
         var i;
+        var customDate = false;
         for(i = 0; i < records.length; i ++) {
             var text = records[i].get('text');
-            var value = text.substr(0, text.lastIndexOf('('));
-            facetFilter = facetFilter + records[i].parentNode.get('text') + ":" + value + " ";
+            var value = text.substr(0, text.lastIndexOf('(') - 1);
+            var parentValue = records[i].parentNode.get('text');
+            if(!filters[parentValue]) {
+                filters[parentValue] = '';
+            }
+            if(parentValue == 'timestamp') {
+                var dt = new Date();
+                var currentDt = Ext.Date.format(dt, "Y-m-d") + "T" + Ext.Date.format(dt, "H:i:s") + "Z";
+                switch(value) {
+                    case 'last hour':
+                        dt = Ext.Date.add(dt, Ext.Date.HOUR, -1);
+                        break;
+                    case 'last day':
+                        dt = Ext.Date.add(dt, Ext.Date.DAY, -1);
+                        break;
+                    case 'last week':
+                        dt = Ext.Date.add(dt, Ext.Date.DAY, -7);
+                        break;
+                    default:
+                        if(text == 'custom') {
+                            customDate = true;
+                        }
+                        break;
+                }
+                if(customDate == false) {
+                    var pastDt = Ext.Date.format(dt, "Y-m-d") + "T" + Ext.Date.format(dt, "H:i:s") + "Z";
+                    if(filters[parentValue] != '') {
+                        filters[parentValue] = filters[parentValue] + ' OR [' + pastDt + ' TO ' + currentDt + ']';
+                    } else {
+                        filters[parentValue] = '[' + pastDt + ' TO ' + currentDt + ']';
+                    }
+                }
+            } else {
+                if(filters[parentValue] != '') {
+                    filters[parentValue] = filters[parentValue] + ' OR ' + value;
+                } else {
+                    filters[parentValue] = value;
+                }
+            }
         }
-        display.toggleSourceEdit(false);
-        if(searchField.getValue()) {
-            doSolrSearch(facetFilter + 'content:' + searchField.getValue());
-        } else if (facetFilter){
-            doSolrSearch(facetFilter);
+        if(customDate == false) {
+            for(var key in filters) {
+                facetFilter = facetFilter + key + ':(' + filters[key] + ') ';
+            }
+            display.toggleSourceEdit(false);
+            if(searchField.getValue()) {
+                doSolrSearch(facetFilter + 'content:' + searchField.getValue());
+            } else if (facetFilter){
+                doSolrSearch(facetFilter);
+            }
+        } else {
+            if(selected[0].get('text') == 'custom') {
+                customDateWindow.show();
+                return;
+            } else {
+                submitCustomDate();
+            }
         }
     }
+
+    function uncheckCustom() {
+        var root = facetsPanel.getRootNode();
+        var parent = root.findChildBy(function(n) {
+            if (n.get('text') == 'timestamp') {
+                return true;
+            }
+        });
+        var leaf = parent.findChildBy(function(n) {
+            if (n.get('text') == 'custom') {
+                return true;
+            }
+        });
+        leaf.set('checked', false);
+    }
+
+    function submitCustomDate() {
+        var fromDate = Ext.getCmp('from-date-field');
+        var fromTime = Ext.getCmp('from-time-field');
+        var toDate = Ext.getCmp('to-date-field');
+        var toTime = Ext.getCmp('to-time-field');
+        if(fromDate.validate() || fromTime.validate()) {
+            if(!fromDate.validate()) {
+                fromDate.setValue(toDate.getValue());
+            } else {
+                fromTime.setValue(toTime.getValue());
+            }
+            var fromValue = fromDate.getSubmitValue() + 'T' + fromTime.getSubmitValue() + 'Z';
+            var toValue = toDate.getSubmitValue() + 'T' + toTime.getSubmitValue() + 'Z';
+            if(filters['timestamp'] != '') {
+                filters['timestamp'] = filters['timestamp'] + 'OR [' + fromValue + ' TO ' + toValue + ']';
+            } else {
+                filters['timestamp'] = '[' + fromValue + ' TO ' + toValue + ']';
+            }
+            for(var key in filters) {
+                facetFilter = facetFilter + key + ':(' + filters[key] + ') ';
+            }
+            display.toggleSourceEdit(false);
+            if(searchField.getValue()) {
+                doSolrSearch(facetFilter + 'content:' + searchField.getValue());
+            } else if (facetFilter){
+                doSolrSearch(facetFilter);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    var customDateWindow = Ext.create('Ext.window.Window', {
+        title: 'Custom date',
+        layout: 'anchor',
+        closable: false,
+        modal: true,
+        items: [
+            {
+                xtype: 'datefield',
+                id: 'from-date-field',
+                fieldLabel: 'From date',
+                format: 'Y-m-d',
+                allowBlank: false,
+                editable: false,
+                maxValue: new Date(),
+                anchor: '100%'
+            }, {
+                xtype: 'timefield',
+                id: 'from-time-field',
+                fieldLabel: 'From time',
+                format: 'H:i:s',
+                allowBlank: false,
+                editable: false,
+                anchor: '100%'
+            }, {
+                xtype: 'datefield',
+                id: 'to-date-field',
+                fieldLabel: 'To date',
+                format: 'Y-m-d',
+                editable: false,
+                maxValue: new Date(),
+                value: new Date(),
+                anchor: '100%'
+            }, {
+                xtype: 'timefield',
+                id: 'to-time-field',
+                fieldLabel: 'To time',
+                format: 'H:i:s',
+                editable: false,
+                value: new Date(),
+                anchor: '100%'
+            }
+        ],
+        buttons: [
+            {
+                text: 'Ok',
+                handler: function() {
+                    var submitState = submitCustomDate();
+                    if(submitState) {
+                        customDateWindow.hide();
+                    }
+                }
+            },
+            {
+                text: 'Cancel',
+                handler: function() {
+                    Ext.getCmp('from-date-field').reset();
+                    Ext.getCmp('from-time-field').reset();
+                    customDateWindow.hide();
+                    uncheckCustom();
+                }
+            }
+        ]
+    })
 
     var updateLog = function update() {
        if (!refreshLocked) {
@@ -239,7 +422,10 @@ Ext.onReady(function() {
                 property: 'text',
                 direction: 'ASC'
             }
-        ]
+        ],
+        listeners: {
+            load: addCustomDate
+        }
     });
     
     var contextMenu = new Ext.menu.Menu({
