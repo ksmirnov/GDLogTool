@@ -78,7 +78,9 @@ public class SolrSearchAction extends Action {
         for(Facet f : facets) {
             out.append("{text: '" + f.getName() + "', expanded: true, children: [");
             for(String s : f.getCount().keySet()) {
-                out.append("{text: '" + s + " (" + f.getCount().get(s) + ")', value: '" + s + "', leaf: true, checked: false},");
+                if(f.getCount().get(s) > 0) {
+                    out.append("{text: '" + s + " (" + f.getCount().get(s) + ")', leaf: true, checked: false},");
+                }
             }
             out.setLength(out.length() - 1);
             out.append("]},");
