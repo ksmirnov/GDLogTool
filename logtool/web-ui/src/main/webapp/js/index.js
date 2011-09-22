@@ -68,15 +68,17 @@ Ext.onReady(function() {
 
     function refreshTree() {
         treestore.load();
-        if(searchField.getValue()) {
-            contentFilter = 'content:' + searchField.getValue();
-            var operation = new Ext.data.Operation({
-                action: 'read',
-                page: contentFilter
-            });
-            facetsStore.load(operation);
-        } else {
-            facetsStore.load();
+        if(searchRunning == false) {
+            if(searchField.getValue()) {
+                contentFilter = 'content:' + searchField.getValue();
+                var operation = new Ext.data.Operation({
+                    action: 'read',
+                    page: contentFilter
+                });
+                facetsStore.load(operation);
+            } else {
+                facetsStore.load();
+            }
         }
     }
 
