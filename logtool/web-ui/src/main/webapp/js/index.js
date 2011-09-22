@@ -9,6 +9,8 @@ Ext.onReady(function() {
     var lastPage = false;
 
     var refreshLocked = false;
+    var firstBoot = true;
+    var secondBoot = false;
 
     var searchRunning = false;
     var searchResult;
@@ -19,7 +21,7 @@ Ext.onReady(function() {
     var searchLastPage = false;
     var searchResApps = [];
     var searchResPages = [];
-    var searchResCurApp;
+    var searchResCurApp = 0;
     var searchResCurPage;
     var searchResCurOcc;
     var searchBytesToLightFromPrevPage = 0;
@@ -35,6 +37,20 @@ Ext.onReady(function() {
     var isGrepOverSolr = false;
 
 
+    function getVariable(varName){
+        var arg=location.search.substring(1).split('&');
+        var variable="";
+        var i;
+        for(i=0;i<arg.length;i++){
+                if(arg[i].split('=')[0]==varName){
+                        if(arg[i].split('=').length>1){
+                                variable=arg[i].split('=')[1];
+                        }
+                        return variable;
+                }
+        }
+        return ""
+    }
     
     function delTreeEl() {
         var view = treePanel.getView();
@@ -239,8 +255,53 @@ Ext.onReady(function() {
                 property: 'text',
                 direction: 'ASC'
             }
-        ]
+        ],
+        listeners: {
+            load: setChecked
+        }
     });
+
+
+    function setChecked() {
+        if (firstBoot == true && (getVariable("content")!= ""  || getVariable("facet") != "")){
+            searchField.setValue(getVariable("content"));
+            searchResCurApp = parseInt(getVariable("current"));
+            var searchQuery = getVariable("facet").replace(/%20/g,"  ").split('  ');
+            var i;
+            for(i=0;i<searchQuery.length;i++){
+                setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1]);
+            }
+            facetSelected();
+            contentFilter = 'content:' + searchField.getValue();
+            var operation = new Ext.data.Operation({
+                action: 'read',
+                page: contentFilter
+            });
+            facetsStore.load(operation);
+            secondBoot = true;
+        } else if (secondBoot){
+            secondBoot = false;
+            var searchQuery = getVariable("facet").replace(/%20/g,"  ").split('  ');
+            for(i=0;i<searchQuery.length;i++){
+                setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1]);
+            }
+        }
+    }
+
+    function setOneChecked(arg, value){
+                var root = facetsPanel.getRootNode();
+                var parent = root.findChildBy(function(n) {
+                    if (n.get('text') == arg) {
+                        return true;
+                    }
+                });
+                var leaf = parent.findChildBy(function(n) {
+                    if (n.get('text').indexOf(value) == 0) {
+                        return true;
+                }
+                });
+                leaf.set('checked', true);
+    }
     
     var contextMenu = new Ext.menu.Menu({
         items : [
@@ -369,7 +430,19 @@ Ext.onReady(function() {
         enableFormat: false,
         enableLinks: false,
         enableLists: false,
-        enableSourceEdit: true
+        enableSourceEdit: true,
+        listeners: {
+            activate: function() {
+                if ( firstBoot & getVariable("log")!= ""  & getVariable("page") != "") {
+                    firstBoot = false;
+                    selectedFilePath = getVariable("log").replace(/%2F/g,"/").replace(/%20/g, " ");
+                    partViewed = parseInt(getVariable("page"));
+                    if(selectedFilePath != "" & partViewed > -1) {
+                        writeText(selectedFilePath);
+                    }
+                }
+            }
+        }
     });
 
     var pageNum = Ext.create('Ext.toolbar.TextItem', {
@@ -592,7 +665,18 @@ Ext.onReady(function() {
         anchor: '100%',
         listeners: {
                 click: function() {
-                    linkField.setValue(selectedFilePath);
+                    var bookmark;
+                    if(selectedFilePath != ""){
+                        bookmark = selectedFilePath;
+                        bookmark = bookmark.replace(/\//g,"%2F").replace(/ /g,"%20");
+                        bookmark = loc + "/?log=" + bookmark + "&page=" + partViewed;
+                    } else if (searchRunning) {
+                        bookmark = loc + "/?facet=" + facetFilter.substring(0, facetFilter.length -2).replace(/  /g,"%20");
+                        if(searchField.getValue()){
+                            bookmark = bookmark + "&content=" + searchField.getValue() + "&current=" + searchResCurApp ;
+                        }
+                    }
+                    linkField.setValue(bookmark);
                 }
         }
     });
@@ -602,7 +686,7 @@ Ext.onReady(function() {
         anchor: '100%',
         listeners: {
                 click: function() {
-                    alert('Hello alerts!');
+                    window.location= loc + "/alerts.html";
                 }
         }
     });
@@ -811,8 +895,11 @@ Ext.onReady(function() {
                     return;
                 }
                 addSearchResultToGrid();
-
-                searchResCurApp = 0;
+                if(firstBoot == true){
+                    firstBoot = false;
+                } else {
+                    searchResCurApp = 0;
+                }
                 updateSolrSearchPagePos();
 
                 logPagingToolbar.enable();
