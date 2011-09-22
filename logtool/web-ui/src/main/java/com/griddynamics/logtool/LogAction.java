@@ -89,6 +89,9 @@ public class LogAction extends Action {
                 case '"':
                     sb.append("\\\"");
                     break;
+                case '\'':
+                    sb.append("\\\'");
+                    break;
                 case '\\':
                     sb.append("\\\\");
                     break;
@@ -129,3 +132,4 @@ public class LogAction extends Action {
         }
     }
 }
+
