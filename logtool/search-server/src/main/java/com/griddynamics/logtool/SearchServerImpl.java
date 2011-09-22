@@ -9,6 +9,10 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +29,7 @@ public class SearchServerImpl implements SearchServer {
     private String solrPath;
     private int cacheBeforeCommit;
     private AtomicInteger docsCounter = new AtomicInteger(0);
+    private final DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     public SearchServerImpl(String solrPath, int cacheBeforeCommit, long updatePeriod) {
         if(!solrPath.isEmpty() && !solrPath.equals("default")) {
@@ -130,6 +135,14 @@ public class SearchServerImpl implements SearchServer {
         if(query != null && !query.isEmpty()) {
             solrQuery.addFilterQuery(query);
         }
+        DateTime dt = new DateTime(System.currentTimeMillis());
+        String currentDt = timeFormatter.print(dt);
+        String lastHour = timeFormatter.print(dt.plusHours(-1));
+        String lastDay = timeFormatter.print(dt.plusDays(-1));
+        String lastWeek = timeFormatter.print(dt.plusWeeks(-1));
+        solrQuery.addFacetQuery("timestamp:[" + lastHour + " TO " + currentDt + "]");
+        solrQuery.addFacetQuery("timestamp:[" + lastDay + " TO " + currentDt + "]");
+        solrQuery.addFacetQuery("timestamp:[" + lastWeek + " TO " + currentDt + "]");
         solrQuery.addFacetField("host", "application", "instance", "level");
         solrQuery.setRows(0);
         QueryResponse resp = search0(solrQuery);
@@ -144,6 +157,13 @@ public class SearchServerImpl implements SearchServer {
                     out.add(current);
                 }
             }
+            Facet dates = new Facet("timestamp");
+            Map<String, Integer> facetQuery = resp.getFacetQuery();
+            Iterator it = facetQuery.keySet().iterator();
+            dates.addCount("last hour", (long) facetQuery.get(it.next()));
+            dates.addCount("last day", (long) facetQuery.get(it.next()));
+            dates.addCount("last week", (long) facetQuery.get(it.next()));
+            out.add(dates);
             return out;
         } else return null;
     }

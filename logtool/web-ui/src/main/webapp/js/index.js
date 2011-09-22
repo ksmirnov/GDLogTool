@@ -31,6 +31,7 @@ Ext.onReady(function() {
     var searchLogTotalPages = 0;
     var contentFilter = '';
     var facetFilter = '';
+    var filters = {};
 
     var solrSearchOccurrences = [];
     var isSolrSearch = false;
@@ -72,9 +73,29 @@ Ext.onReady(function() {
         }
     }
 
+    function addCustomDate() {
+        var node = facetsPanel.getRootNode().findChild('text', 'timestamp');
+        node.appendChild({
+            text: 'custom',
+            leaf: true,
+            checked: false
+        });
+    }
+
     function refreshTree() {
         treestore.load();
-        facetsStore.load();
+        if(searchRunning == false) {
+            if(searchField.getValue()) {
+                contentFilter = 'content:' + searchField.getValue();
+                var operation = new Ext.data.Operation({
+                    action: 'read',
+                    page: contentFilter
+                });
+                facetsStore.load(operation);
+            } else {
+                facetsStore.load();
+            }
+        }
     }
 
     function mergeLogs() {
@@ -195,21 +216,196 @@ Ext.onReady(function() {
     function facetSelected() {
         clearText();
         facetFilter = '';
+        filters = {};
         var view = facetsPanel.getView();
         var records = view.getChecked();
+        var selected = view.getSelectionModel().getSelection();
         var i;
+        var customDate = false;
         for(i = 0; i < records.length; i ++) {
             var text = records[i].get('text');
-            var value = text.substr(0, text.lastIndexOf('('));
-            facetFilter = facetFilter + records[i].parentNode.get('text') + ":" + value + " ";
+            var value = text.substr(0, text.lastIndexOf('(') - 1);
+            var parentValue = records[i].parentNode.get('text');
+            if(!filters[parentValue]) {
+                filters[parentValue] = '';
+            }
+            if(parentValue == 'timestamp') {
+                var dt = new Date();
+                var currentDt = Ext.Date.format(dt, "Y-m-d") + "T" + Ext.Date.format(dt, "H:i:s") + "Z";
+                switch(value) {
+                    case 'last hour':
+                        dt = Ext.Date.add(dt, Ext.Date.HOUR, -1);
+                        break;
+                    case 'last day':
+                        dt = Ext.Date.add(dt, Ext.Date.DAY, -1);
+                        break;
+                    case 'last week':
+                        dt = Ext.Date.add(dt, Ext.Date.DAY, -7);
+                        break;
+                    default:
+                        if(text == 'custom') {
+                            customDate = true;
+                        }
+                        break;
+                }
+                if(customDate == false) {
+                    var pastDt = Ext.Date.format(dt, "Y-m-d") + "T" + Ext.Date.format(dt, "H:i:s") + "Z";
+                    if(filters[parentValue] != '') {
+                        filters[parentValue] = filters[parentValue] + ' OR [' + pastDt + ' TO ' + currentDt + ']';
+                    } else {
+                        filters[parentValue] = '[' + pastDt + ' TO ' + currentDt + ']';
+                    }
+                }
+            } else {
+                if(filters[parentValue] != '') {
+                    filters[parentValue] = filters[parentValue] + ' OR ' + value;
+                } else {
+                    filters[parentValue] = value;
+                }
+            }
         }
-        display.toggleSourceEdit(false);
-        if(searchField.getValue()) {
-            doSolrSearch(facetFilter + 'content:' + searchField.getValue());
-        } else if (facetFilter){
-            doSolrSearch(facetFilter);
+        if(customDate == false) {
+            for(var key in filters) {
+                if(facetFilter != '') {
+                    facetFilet = facetFilter + 'AND ';
+                }
+                facetFilter = facetFilter + key + ':(' + filters[key] + ') ';
+            }
+            display.toggleSourceEdit(false);
+            if(searchField.getValue()) {
+                if(facetFilter != '') {
+                    doSolrSearch(facetFilter + 'AND content:' + searchField.getValue());
+                } else {
+                    doSolrSearch('content:' + searchField.getValue());
+                }
+            } else if (facetFilter){
+                doSolrSearch(facetFilter);
+            }
+        } else {
+            if(selected[0].get('text') == 'custom') {
+                customDateWindow.show();
+                return;
+            } else {
+                submitCustomDate();
+            }
         }
     }
+
+    function uncheckCustom() {
+        var root = facetsPanel.getRootNode();
+        var parent = root.findChildBy(function(n) {
+            if (n.get('text') == 'timestamp') {
+                return true;
+            }
+        });
+        var leaf = parent.findChildBy(function(n) {
+            if (n.get('text') == 'custom') {
+                return true;
+            }
+        });
+        leaf.set('checked', false);
+    }
+
+    function submitCustomDate() {
+        var fromDate = Ext.getCmp('from-date-field');
+        var fromTime = Ext.getCmp('from-time-field');
+        var toDate = Ext.getCmp('to-date-field');
+        var toTime = Ext.getCmp('to-time-field');
+        if(fromDate.validate() || fromTime.validate()) {
+            if(!fromDate.validate()) {
+                fromDate.setValue(toDate.getValue());
+            } else {
+                fromTime.setValue(toTime.getValue());
+            }
+            var fromValue = fromDate.getSubmitValue() + 'T' + fromTime.getSubmitValue() + 'Z';
+            var toValue = toDate.getSubmitValue() + 'T' + toTime.getSubmitValue() + 'Z';
+            if(filters['timestamp'] != '') {
+                filters['timestamp'] = filters['timestamp'] + 'OR [' + fromValue + ' TO ' + toValue + ']';
+            } else {
+                filters['timestamp'] = '[' + fromValue + ' TO ' + toValue + ']';
+            }
+            for(var key in filters) {
+                if(facetFilter != '') {
+                    facetFilet = facetFilter + 'AND ';
+                }
+                facetFilter = facetFilter + key + ':(' + filters[key] + ') ';
+            }
+            display.toggleSourceEdit(false);
+            if(searchField.getValue()) {
+                doSolrSearch(facetFilter + 'AND content:' + searchField.getValue());
+            } else if (facetFilter){
+                doSolrSearch(facetFilter);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    var customDateWindow = Ext.create('Ext.window.Window', {
+        title: 'Custom date',
+        layout: 'anchor',
+        bodyPadding: '5 5 5 5',
+        closable: false,
+        modal: true,
+        items: [
+            {
+                xtype: 'datefield',
+                id: 'from-date-field',
+                fieldLabel: 'From date',
+                format: 'Y-m-d',
+                allowBlank: false,
+                editable: false,
+                maxValue: new Date(),
+                anchor: '100%'
+            }, {
+                xtype: 'timefield',
+                id: 'from-time-field',
+                fieldLabel: 'From time',
+                format: 'H:i:s',
+                allowBlank: false,
+                editable: false,
+                anchor: '100%'
+            }, {
+                xtype: 'datefield',
+                id: 'to-date-field',
+                fieldLabel: 'To date',
+                format: 'Y-m-d',
+                editable: false,
+                maxValue: new Date(),
+                value: new Date(),
+                anchor: '100%'
+            }, {
+                xtype: 'timefield',
+                id: 'to-time-field',
+                fieldLabel: 'To time',
+                format: 'H:i:s',
+                editable: false,
+                value: new Date(),
+                anchor: '100%'
+            }
+        ],
+        buttons: [
+            {
+                text: 'Ok',
+                handler: function() {
+                    var submitState = submitCustomDate();
+                    if(submitState) {
+                        customDateWindow.hide();
+                    }
+                }
+            },
+            {
+                text: 'Cancel',
+                handler: function() {
+                    Ext.getCmp('from-date-field').reset();
+                    Ext.getCmp('from-time-field').reset();
+                    customDateWindow.hide();
+                    uncheckCustom();
+                }
+            }
+        ]
+    })
 
     var updateLog = function update() {
        if (!refreshLocked) {
@@ -257,7 +453,10 @@ Ext.onReady(function() {
             }
         ],
         listeners: {
-            load: setChecked
+            load: function(){
+                    addCustomDate();
+                    setChecked();
+                  }
         }
     });
 
@@ -266,12 +465,23 @@ Ext.onReady(function() {
         if (firstBoot == true && (getVariable("content")!= ""  || getVariable("facet") != "")){
             searchField.setValue(getVariable("content"));
             searchResCurApp = parseInt(getVariable("current"));
-            var searchQuery = getVariable("facet").replace(/%20/g,"  ").split('  ');
+            var searchQuery = getVariable("facet").replace(/%20TO%20/g,"||").replace(/%20OR%20/g,"||").replace(/%20/g," ").split(' ');
             var i;
             for(i=0;i<searchQuery.length;i++){
-                setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1]);
+                if(searchQuery[i].split(':')[1].split("||").length > 1){
+                    var j;
+                    for(j=0;j<searchQuery[i].split(':')[1].split("||").length;j++){
+                        setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1].split("||")[j]);
+                    }
+                } else {
+                    if(searchQuery[i].split(':')[0] != "timestamp"){
+                        setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1]);
+                    } else {
+                        setOneChecked(searchQuery[i].split(':')[0], "custom");
+                    }
+                }
             }
-            facetSelected();
+            doSolrSearch(getVariable("facet").replace(/%20/g," ") + 'AND content:' + searchField.getValue());            
             contentFilter = 'content:' + searchField.getValue();
             var operation = new Ext.data.Operation({
                 action: 'read',
@@ -281,14 +491,27 @@ Ext.onReady(function() {
             secondBoot = true;
         } else if (secondBoot){
             secondBoot = false;
-            var searchQuery = getVariable("facet").replace(/%20/g,"  ").split('  ');
+            var searchQuery = getVariable("facet").replace(/%20OR%20/g,"||").replace(/%20/g," ").split(' ');
+            var i;
             for(i=0;i<searchQuery.length;i++){
-                setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1]);
+                if(searchQuery[i].split(':')[1].split("||").length > 1){
+                    var j;
+                    for(j=0;j<searchQuery[i].split(':')[1].split("||").length;j++){
+                        setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1].split("||")[j]);
+                    }
+                } else {
+                    if(searchQuery[i].split(':')[0] != "timestamp"){
+                        setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1]);
+                    } else {
+                        setOneChecked(searchQuery[i].split(':')[0], "custom");
+                    }
+                }
             }
         }
     }
 
     function setOneChecked(arg, value){
+                console.log(arg + " !! " + value);
                 var root = facetsPanel.getRootNode();
                 var parent = root.findChildBy(function(n) {
                     if (n.get('text') == arg) {
@@ -296,7 +519,8 @@ Ext.onReady(function() {
                     }
                 });
                 var leaf = parent.findChildBy(function(n) {
-                    if (n.get('text').indexOf(value) == 0) {
+                    var newOne = value.replace("(","").replace(")","");
+                    if (n.get('text').indexOf(value.replace("(","").replace(")","")) != -1) {
                         return true;
                 }
                 });
@@ -327,6 +551,7 @@ Ext.onReady(function() {
             itemclick : function(view, record, item, index, e) {
                 if (record.isLeaf()) {
                     clearText();
+                    searchField.reset();
                     if(searchRunning == true) {
                         contentFilter = '';
                         facetsStore.load();
@@ -370,6 +595,11 @@ Ext.onReady(function() {
                 ]
             }
         ]
+    });
+
+    var changeTask = new Ext.util.DelayedTask(function(){
+        doSearch();
+        searchField.focus(false, true);
     });
 
     var searchField = Ext.create('Ext.form.field.Text', {
@@ -671,9 +901,11 @@ Ext.onReady(function() {
                         bookmark = bookmark.replace(/\//g,"%2F").replace(/ /g,"%20");
                         bookmark = loc + "/?log=" + bookmark + "&page=" + partViewed;
                     } else if (searchRunning) {
-                        bookmark = loc + "/?facet=" + facetFilter.substring(0, facetFilter.length -2).replace(/  /g,"%20");
+                        if(facetFilter != ""){
+                            bookmark = loc + "/?facet=" + facetFilter.trim().replace(/ /g,"%20").replace();
+                        }
                         if(searchField.getValue()){
-                            bookmark = bookmark + "&content=" + searchField.getValue() + "&current=" + searchResCurApp ;
+                            bookmark = bookmark + "&content=" + searchField.getValue() + "&current=" + searchResCurApp;
                         }
                     }
                     linkField.setValue(bookmark);
@@ -807,6 +1039,10 @@ Ext.onReady(function() {
         interval: 5000
     });
 
+    Ext.get('search-field').on('keyup', function(){
+        changeTask.delay(1000);
+    });
+
     function updateSearchPageNum() {
         searchPageNum.setText(parseInt(Math.ceil((searchSolrPos + 1)/10)) +
                             ' / ' + parseInt(Math.ceil(solrSearchOccurrences.length/10)));
@@ -879,7 +1115,7 @@ Ext.onReady(function() {
                 subaction: 'solrsearch',
                 query: query,
                 start: 0,
-                amount: 30,
+                amount: 300,
                 sortField: sortFieldCombo.getValue(),
                 order: sortOrderCombo.getValue()
             },
@@ -888,10 +1124,7 @@ Ext.onReady(function() {
                 solrSearchOccurrences = Ext.decode(result.responseText);
 
                 if (solrSearchOccurrences.length == 0) {
-                    Ext.MessageBox.show({
-                        title: 'Search results',
-                        msg: 'Nothing found.', buttons: Ext.MessageBox.OK
-                    });
+                    display.setValue('Nothing found.');
                     return;
                 }
                 addSearchResultToGrid();
