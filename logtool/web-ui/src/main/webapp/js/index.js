@@ -250,11 +250,14 @@ Ext.onReady(function() {
         }
         if(customDate == false) {
             for(var key in filters) {
+                if(facetFilter != '') {
+                    facetFilet = facetFilter + 'AND ';
+                }
                 facetFilter = facetFilter + key + ':(' + filters[key] + ') ';
             }
             display.toggleSourceEdit(false);
             if(searchField.getValue()) {
-                doSolrSearch(facetFilter + 'content:' + searchField.getValue());
+                doSolrSearch(facetFilter + 'AND content:' + searchField.getValue());
             } else if (facetFilter){
                 doSolrSearch(facetFilter);
             }
@@ -302,11 +305,14 @@ Ext.onReady(function() {
                 filters['timestamp'] = '[' + fromValue + ' TO ' + toValue + ']';
             }
             for(var key in filters) {
+                if(facetFilter != '') {
+                    facetFilet = facetFilter + 'AND ';
+                }
                 facetFilter = facetFilter + key + ':(' + filters[key] + ') ';
             }
             display.toggleSourceEdit(false);
             if(searchField.getValue()) {
-                doSolrSearch(facetFilter + 'content:' + searchField.getValue());
+                doSolrSearch(facetFilter + 'AND content:' + searchField.getValue());
             } else if (facetFilter){
                 doSolrSearch(facetFilter);
             }
@@ -454,6 +460,7 @@ Ext.onReady(function() {
             itemclick : function(view, record, item, index, e) {
                 if (record.isLeaf()) {
                     clearText();
+                    searchField.reset();
                     if(searchRunning == true) {
                         contentFilter = '';
                         facetsStore.load();
