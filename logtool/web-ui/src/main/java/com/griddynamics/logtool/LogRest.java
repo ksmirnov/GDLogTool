@@ -6,6 +6,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 import java.util.*;
 
 @Path("/rest/")
@@ -127,6 +128,40 @@ public class LogRest {
         return alert;
     }
 
+    @GET
+    @Path("/find/")
+    @Produces("application/xml")
+    public Messages getMessages(@QueryParam("query") String query, @QueryParam("start") int start,
+                                @QueryParam("amount") int amount, @QueryParam("sortField") String sortField,
+                                @QueryParam("order") String order) {
+        if(query == null || query.isEmpty()) {
+            query = "*:*";
+        }
+        if(start < 0) {
+            start = 0;
+        }
+        if(amount <= 0) {
+            amount = 30;
+        }
+        if(sortField == null || sortField.isEmpty()) {
+            sortField = "timestamp";
+        }
+        if(order == null || order.isEmpty() || (!order.equalsIgnoreCase("asc") && order.equalsIgnoreCase("desc"))) {
+            order = "asc";
+        }
+        List<Map<String, String>> result = searchServer.search(query, start, amount, sortField, order);
+        Messages out = new Messages();
+        for(Map<String, String> item : result) {
+            Message current = new Message();
+            current.setApplication(item.get("application"));
+            current.setHost(item.get("host"));
+            current.setInstance(item.get("instance"));
+            current.setTimestamp(item.get("timestamp"));
+            current.setContent(item.get("content"));
+            out.addMessage(current);
+        }
+        return out;
+    }
 }
 
 @XmlRootElement(name = "Level")
@@ -180,6 +215,25 @@ class Alert {
 
     public void setAlert(List<String> alert) {
         this.alert = alert;
+    }
+}
+
+@XmlRootElement(name = "Messages")
+class Messages {
+
+    private List<Message> messages = new LinkedList<Message>();
+
+    @XmlElement(name = "Message")
+    public List<Message> getMessages() {
+        return messages;
+    }
+
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
+    }
+
+    public void addMessage(Message e) {
+        messages.add(e);
     }
 }
 

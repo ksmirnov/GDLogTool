@@ -497,6 +497,10 @@ Ext.onReady(function() {
         ]
     });
 
+    var changeTask = new Ext.util.DelayedTask(function(){
+        doSearch();
+    });
+
     var searchField = Ext.create('Ext.form.field.Text', {
         id: 'search-field',
         emptyText: 'Search by content...',
@@ -909,6 +913,10 @@ Ext.onReady(function() {
         interval: 5000
     });
 
+    Ext.get('search-field').on('keypress', function(){
+        changeTask.delay(500);
+    });
+
     function updateSearchPageNum() {
         searchPageNum.setText(parseInt(Math.ceil((searchSolrPos + 1)/10)) +
                             ' / ' + parseInt(Math.ceil(solrSearchOccurrences.length/10)));
@@ -990,10 +998,7 @@ Ext.onReady(function() {
                 solrSearchOccurrences = Ext.decode(result.responseText);
 
                 if (solrSearchOccurrences.length == 0) {
-                    Ext.MessageBox.show({
-                        title: 'Search results',
-                        msg: 'Nothing found.', buttons: Ext.MessageBox.OK
-                    });
+                    display.setValue('Nothing found.');
                     return;
                 }
                 addSearchResultToGrid();
