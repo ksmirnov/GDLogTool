@@ -499,6 +499,7 @@ Ext.onReady(function() {
 
     var changeTask = new Ext.util.DelayedTask(function(){
         doSearch();
+        searchField.focus(false, true);
     });
 
     var searchField = Ext.create('Ext.form.field.Text', {
@@ -913,8 +914,8 @@ Ext.onReady(function() {
         interval: 5000
     });
 
-    Ext.get('search-field').on('keypress', function(){
-        changeTask.delay(500);
+    Ext.get('search-field').on('keyup', function(){
+        changeTask.delay(1000);
     });
 
     function updateSearchPageNum() {
