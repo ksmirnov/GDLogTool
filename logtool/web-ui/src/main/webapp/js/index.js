@@ -435,7 +435,7 @@ Ext.onReady(function() {
     });
 
     var facetProxy = Ext.create('Ext.data.proxy.Ajax', {
-        url: '/logtool?action=doSolrSearch&subaction=getFacets',
+        url: loc + '/logtool?action=doSolrSearch&subaction=getFacets',
         pageParam: 'filter'
     });
 
