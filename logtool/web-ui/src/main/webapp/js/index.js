@@ -266,7 +266,7 @@ Ext.onReady(function() {
         if(customDate == false) {
             for(var key in filters) {
                 if(facetFilter != '') {
-                    facetFilet = facetFilter + 'AND ';
+                    facetFilter = facetFilter + 'AND ';
                 }
                 facetFilter = facetFilter + key + ':(' + filters[key] + ') ';
             }
@@ -279,6 +279,8 @@ Ext.onReady(function() {
                 }
             } else if (facetFilter){
                 doSolrSearch(facetFilter);
+            } else {
+                facetsPanel.enable();
             }
         } else {
             if(selected[0].get('text') == 'custom') {
@@ -401,6 +403,7 @@ Ext.onReady(function() {
                     Ext.getCmp('from-time-field').reset();
                     customDateWindow.hide();
                     uncheckCustom();
+                    facetsPanel.enable();
                 }
             }
         ]
@@ -638,7 +641,10 @@ Ext.onReady(function() {
             beforecollapse: function() {
                 treePanel.expand();
             },
-            checkchange: facetSelected
+            checkchange: function() {
+                this.disable();
+                facetSelected();
+            }
         }
     });
 
@@ -1132,6 +1138,7 @@ Ext.onReady(function() {
 
                 if (solrSearchOccurrences.length == 0) {
                     display.setValue('Nothing found.');
+                    facetsPanel.enable();
                     return;
                 }
                 addSearchResultToGrid();
@@ -1145,9 +1152,11 @@ Ext.onReady(function() {
                 logPagingToolbar.enable();
 
                 printNewPage();
+                facetsPanel.enable();
             },
             failure: function (result, request) {
                 Ext.MessageBox.alert('Failed', result.responseText);
+                facetsPanel.enable();
             }
         });
     };
