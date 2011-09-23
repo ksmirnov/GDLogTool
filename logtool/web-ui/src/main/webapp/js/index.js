@@ -556,6 +556,13 @@ Ext.onReady(function() {
         store : treestore,
         listeners : {
             itemclick : function(view, record, item, index, e) {
+                var chkNodes = this.getView().getChecked();
+                var deleteButton = Ext.getCmp('delete-button');
+                if(chkNodes.length > 0) {
+                    deleteButton.enable();
+                } else {
+                    deleteButton.disable();
+                }
                 if (record.isLeaf()) {
                     clearText();
                     searchField.reset();
@@ -589,12 +596,13 @@ Ext.onReady(function() {
                         text: 'refresh',
                         handler: refreshTree
                     },
+//                    {
+//                        icon: 'extjs/resources/themes/images/default/grid/columns.gif',
+//                        text: 'merge',
+//                        handler: mergeLogs
+//                    },
                     {
-                        icon: 'extjs/resources/themes/images/default/grid/columns.gif',
-                        text: 'merge',
-                        handler: mergeLogs
-                    },
-                    {
+                        id: 'delete-button',
                         icon: 'extjs/resources/delete.gif',
                         text: 'delete',
                         handler : delTreeEl
@@ -1087,6 +1095,7 @@ Ext.onReady(function() {
     viewport.render(Ext.getBody());
     logPagingToolbar.disable();
     searchPagingToolbar.disable();
+    Ext.getCmp('delete-button').disable();
     
     Ext.TaskManager.start({
         run: updateLog,
