@@ -481,7 +481,11 @@ Ext.onReady(function() {
                     }
                 }
             }
-            doSolrSearch(getVariable("facet").replace(/%20/g," ") + 'AND content:' + searchField.getValue());            
+            if(searchField.getValue()) {
+            doSolrSearch(getVariable("facet").replace(/%20/g," ") + 'AND content:' + searchField.getValue());
+            } else {
+            doSolrSearch(getVariable("facet").replace(/%20/g," "));
+            }
             contentFilter = 'content:' + searchField.getValue();
             var operation = new Ext.data.Operation({
                 action: 'read',
@@ -901,12 +905,14 @@ Ext.onReady(function() {
                         bookmark = bookmark.replace(/\//g,"%2F").replace(/ /g,"%20");
                         bookmark = loc + "/?log=" + bookmark + "&page=" + partViewed;
                     } else if (searchRunning) {
+                        bookmark = loc + "/?";                    
                         if(facetFilter != ""){
-                            bookmark = loc + "/?facet=" + facetFilter.trim().replace(/ /g,"%20").replace();
+                            bookmark = bookmark + "facet=" + facetFilter.trim().replace(/ /g,"%20").replace();
                         }
                         if(searchField.getValue()){
-                            bookmark = bookmark + "&content=" + searchField.getValue() + "&current=" + searchResCurApp;
+                            bookmark = bookmark + "&content=" + searchField.getValue();
                         }
+                        bookmark = bookmark +  "&current=" + searchResCurApp;
                     }
                     linkField.setValue(bookmark);
                 }
