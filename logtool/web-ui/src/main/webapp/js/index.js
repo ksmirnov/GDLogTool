@@ -810,7 +810,7 @@ Ext.onReady(function() {
                         if(query) {
                             query += ' AND ';
                         } else {
-                            query += ' AND ' + searchField.getValue();
+                            query += searchField.getValue();
                         }
                     }
                     clearText();
@@ -848,7 +848,7 @@ Ext.onReady(function() {
                         if(query) {
                             query += ' AND ';
                         } else {
-                            query += ' AND ' + searchField.getValue();
+                            query += searchField.getValue();
                         }
                     }
                     clearText();
