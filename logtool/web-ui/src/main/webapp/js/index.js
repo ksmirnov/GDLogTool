@@ -327,7 +327,7 @@ Ext.onReady(function() {
             }
             for(var key in filters) {
                 if(facetFilter != '') {
-                    facetFilet = facetFilter + 'AND ';
+                    facetFilter = facetFilter + 'AND ';
                 }
                 facetFilter = facetFilter + key + ':(' + filters[key] + ') ';
             }
@@ -797,7 +797,15 @@ Ext.onReady(function() {
         store: sortFieldStore,
         editable: false,
         value: 'timestamp',
-        width: 90
+        width: 90,
+        listeners: {
+            change: function() {
+                if(searchRunning) {
+                    var query = '';
+                    if(facetFilter)
+                }
+            }
+        }
     });
 
     var sortOrderData = [{order: 'asc'}, {order: 'desc'}];
