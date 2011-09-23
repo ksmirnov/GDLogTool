@@ -96,15 +96,17 @@ public class SearchServerImpl implements SearchServer {
         }
 
         QueryResponse resp = search0(solrQuery);
-        SolrDocumentList docs = resp.getResults();
         List out = new ArrayList();
-        if(docs != null) {
-            for(SolrDocument doc : docs) {
-                Map<String, String> entry = new HashMap<String, String>();
-                for(String name : doc.getFieldNames()) {
-                    entry.put(name, doc.getFieldValue(name).toString());
+        if(resp != null) {
+            SolrDocumentList docs = resp.getResults();
+            if(docs != null) {
+                for(SolrDocument doc : docs) {
+                    Map<String, String> entry = new HashMap<String, String>();
+                    for(String name : doc.getFieldNames()) {
+                        entry.put(name, doc.getFieldValue(name).toString());
+                    }
+                    out.add(entry);
                 }
-                out.add(entry);
             }
         }
         return out;
