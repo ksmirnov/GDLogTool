@@ -807,7 +807,11 @@ Ext.onReady(function() {
                         query += facetFilter;
                     }
                     if(searchField.getValue()) {
-                        query += ' AND ' + searchField.getValue();
+                        if(query) {
+                            query += ' AND ';
+                        } else {
+                            query += ' AND ' + searchField.getValue();
+                        }
                     }
                     clearText();
                     display.toggleSourceEdit(false);
@@ -841,7 +845,11 @@ Ext.onReady(function() {
                         query += facetFilter;
                     }
                     if(searchField.getValue()) {
-                        query += ' AND ' + searchField.getValue();
+                        if(query) {
+                            query += ' AND ';
+                        } else {
+                            query += ' AND ' + searchField.getValue();
+                        }
                     }
                     clearText();
                     display.toggleSourceEdit(false);
