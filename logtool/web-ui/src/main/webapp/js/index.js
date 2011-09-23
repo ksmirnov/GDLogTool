@@ -482,16 +482,16 @@ Ext.onReady(function() {
                 }
             }
             if(searchField.getValue()) {
-            doSolrSearch(getVariable("facet").replace(/%20/g," ") + 'AND content:' + searchField.getValue());
+                doSolrSearch(getVariable("facet").replace(/%20/g," ") + 'AND content:' + searchField.getValue());
+                contentFilter = 'content:' + searchField.getValue();
+                var operation = new Ext.data.Operation({
+                    action: 'read',
+                    page: contentFilter
+                });
+                facetsStore.load(operation);
             } else {
-            doSolrSearch(getVariable("facet").replace(/%20/g," "));
+                doSolrSearch(getVariable("facet").replace(/%20/g," "));
             }
-            contentFilter = 'content:' + searchField.getValue();
-            var operation = new Ext.data.Operation({
-                action: 'read',
-                page: contentFilter
-            });
-            facetsStore.load(operation);
             secondBoot = true;
         } else if (secondBoot){
             secondBoot = false;
