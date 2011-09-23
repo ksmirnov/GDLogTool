@@ -281,6 +281,7 @@ Ext.onReady(function() {
                 doSolrSearch(facetFilter);
             } else {
                 facetsPanel.enable();
+                searchPagingToolbar.disable();
             }
         } else {
             if(selected[0].get('text') == 'custom') {
@@ -802,7 +803,15 @@ Ext.onReady(function() {
             change: function() {
                 if(searchRunning) {
                     var query = '';
-                    if(facetFilter)
+                    if(facetFilter) {
+                        query += facetFilter;
+                    }
+                    if(searchField.getValue()) {
+                        query += ' AND ' + searchField.getValue();
+                    }
+                    clearText();
+                    display.toggleSourceEdit(false);
+                    doSolrSearch(query);
                 }
             }
         }
@@ -823,7 +832,23 @@ Ext.onReady(function() {
         store: sortOrderStore,
         editable: false,
         value: 'desc',
-        width: 60
+        width: 60,
+        listeners: {
+            change: function() {
+                if(searchRunning) {
+                    var query = '';
+                    if(facetFilter) {
+                        query += facetFilter;
+                    }
+                    if(searchField.getValue()) {
+                        query += ' AND ' + searchField.getValue();
+                    }
+                    clearText();
+                    display.toggleSourceEdit(false);
+                    doSolrSearch(query);
+                }
+            }
+        }
     });
 
     Ext.QuickTips.init();
