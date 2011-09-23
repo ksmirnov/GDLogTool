@@ -961,6 +961,7 @@ Ext.onReady(function() {
                         bookmark = bookmark +  "&current=" + searchResCurApp;
                     }
                     linkField.setValue(bookmark);
+                    linkField.focus(true, true);
                 }
         }
     });
