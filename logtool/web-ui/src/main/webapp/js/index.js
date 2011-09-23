@@ -463,26 +463,34 @@ Ext.onReady(function() {
 
     function setChecked() {
         if (firstBoot == true && (getVariable("content")!= ""  || getVariable("facet") != "")){
-            searchField.setValue(getVariable("content"));
+            var contentSelected = getVariable("content"); 
+            searchField.setValue(contentSelected);
             searchResCurApp = parseInt(getVariable("current"));
-            var searchQuery = getVariable("facet").replace(/%20TO%20/g,"||").replace(/%20OR%20/g,"||").replace(/%20/g," ").split(' ');
-            var i;
-            for(i=0;i<searchQuery.length;i++){
-                if(searchQuery[i].split(':')[1].split("||").length > 1){
-                    var j;
-                    for(j=0;j<searchQuery[i].split(':')[1].split("||").length;j++){
-                        setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1].split("||")[j]);
-                    }
-                } else {
-                    if(searchQuery[i].split(':')[0] != "timestamp"){
-                        setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1]);
+            var facetSelected = getVariable("facet"); 
+            if(facetSelected){
+                var searchQuery = facetSelected.replace(/%20TO%20/g,"||").replace(/%20OR%20/g,"||").replace(/%20/g," ").split(' ');
+                var i;
+                for(i=0;i<searchQuery.length;i++){
+                    if(searchQuery[i].split(':')[1].split("||").length > 1){
+                        var j;
+                        for(j=0;j<searchQuery[i].split(':')[1].split("||").length;j++){
+                            setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1].split("||")[j]);
+                        }
                     } else {
-                        setOneChecked(searchQuery[i].split(':')[0], "custom");
+                        if(searchQuery[i].split(':')[0] != "timestamp"){
+                            setOneChecked(searchQuery[i].split(':')[0],searchQuery[i].split(':')[1]);
+                        } else {
+                            setOneChecked(searchQuery[i].split(':')[0], "custom");
+                        }
                     }
                 }
             }
-            if(searchField.getValue()) {
-                doSolrSearch(getVariable("facet").replace(/%20/g," ") + 'AND content:' + searchField.getValue());
+            if(contentSelected) {
+                if(facetSelected) {
+                    doSolrSearch(getVariable("facet").replace(/%20/g," ") + 'AND content:' + searchField.getValue());
+                } else {
+                    doSolrSearch('content:' + searchField.getValue());
+                }
                 contentFilter = 'content:' + searchField.getValue();
                 var operation = new Ext.data.Operation({
                     action: 'read',
@@ -492,7 +500,9 @@ Ext.onReady(function() {
             } else {
                 doSolrSearch(getVariable("facet").replace(/%20/g," "));
             }
-            secondBoot = true;
+            if(contentSelected){
+                secondBoot = true;
+            }
         } else if (secondBoot){
             secondBoot = false;
             var searchQuery = getVariable("facet").replace(/%20OR%20/g,"||").replace(/%20/g," ").split(' ');
