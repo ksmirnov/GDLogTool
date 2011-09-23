@@ -12,6 +12,7 @@ Ext.onReady(function() {
     var firstBoot = true;
     var secondBoot = false;
 
+    var searchInProgress = false;
     var searchRunning = false;
     var searchResult;
     var pos;
@@ -469,7 +470,15 @@ Ext.onReady(function() {
             var contentSelected = getVariable("content"); 
             searchField.setValue(contentSelected);
             searchResCurApp = parseInt(getVariable("current"));
-            var facetSelected = getVariable("facet"); 
+            var ord = getVariable("ord");
+            if(ord == "asc" || ord == "desc"){
+                sortOrderCombo.setValue(ord);
+            }
+            var ordField = getVariable("ordfield");
+            if(ordField == "timestamp" || ordField == "host" || ordField == "instance" || ordField == "application" || ordField == "level"){
+                sortFieldCombo.setValue(ordField);
+            }
+            var facetSelected = getVariable("facet");
             if(facetSelected){
                 var searchQuery = facetSelected.replace(/%20TO%20/g,"||").replace(/%20OR%20/g,"||").replace(/%20/g," ").split(' ');
                 var i;
@@ -488,8 +497,8 @@ Ext.onReady(function() {
                     }
                 }
             }
-            if(contentSelected) {
-                if(facetSelected) {
+            if(contentSelected != "") {
+                if(facetSelected != "") {
                     doSolrSearch(getVariable("facet").replace(/%20/g," ") + 'AND content:' + searchField.getValue());
                 } else {
                     doSolrSearch('content:' + searchField.getValue());
@@ -503,7 +512,7 @@ Ext.onReady(function() {
             } else {
                 doSolrSearch(getVariable("facet").replace(/%20/g," "));
             }
-            if(contentSelected){
+            if(contentSelected != ""){
                 secondBoot = true;
             }
         } else if (secondBoot){
@@ -528,7 +537,6 @@ Ext.onReady(function() {
     }
 
     function setOneChecked(arg, value){
-                console.log(arg + " !! " + value);
                 var root = facetsPanel.getRootNode();
                 var parent = root.findChildBy(function(n) {
                     if (n.get('text') == arg) {
@@ -961,6 +969,7 @@ Ext.onReady(function() {
                             bookmark = bookmark + "&content=" + searchField.getValue();
                         }
                         bookmark = bookmark +  "&current=" + searchResCurApp;
+                        bookmark = bookmark + "&ord=" + sortOrderCombo.getValue() + "&ordfield=" + sortFieldCombo.getValue();
                     }
                     linkField.setValue(bookmark);
                 }
@@ -1168,46 +1177,50 @@ Ext.onReady(function() {
     };
 
     function doSolrSearch(query) {
-        searchRunning = true;
+        if(!searchInProgress){
+            searchInProgress = true;
+            searchRunning = true;
 
-        Ext.Ajax.request({
-            url : loc + '/logtool' ,
-            params : {
-                action: 'doSolrSearch',
-                subaction: 'solrsearch',
-                query: query,
-                start: 0,
-                amount: 300,
-                sortField: sortFieldCombo.getValue(),
-                order: sortOrderCombo.getValue()
-            },
-            method: 'GET',
-            success: function (result, request) {
-                solrSearchOccurrences = Ext.decode(result.responseText);
+            Ext.Ajax.request({
+                url : loc + '/logtool' ,
+                params : {
+                    action: 'doSolrSearch',
+                    subaction: 'solrsearch',
+                    query: query,
+                    start: 0,
+                    amount: 300,
+                    sortField: sortFieldCombo.getValue(),
+                    order: sortOrderCombo.getValue()
+                },
+                method: 'GET',
+                success: function (result, request) {
+                    solrSearchOccurrences = Ext.decode(result.responseText);
 
-                if (solrSearchOccurrences.length == 0) {
-                    display.setValue('Nothing found.');
+                    if (solrSearchOccurrences.length == 0) {
+                        display.setValue('Nothing found.');
+                        facetsPanel.enable();
+                        return;
+                    }
+                    addSearchResultToGrid();
+                    if(firstBoot == true){
+                        firstBoot = false;
+                    } else {
+                        searchResCurApp = 0;
+                    }
+                    updateSolrSearchPagePos();
+
+                    logPagingToolbar.enable();
+
+                    printNewPage();
                     facetsPanel.enable();
-                    return;
+                },
+                failure: function (result, request) {
+                    Ext.MessageBox.alert('Failed', result.responseText);
+                    facetsPanel.enable();
                 }
-                addSearchResultToGrid();
-                if(firstBoot == true){
-                    firstBoot = false;
-                } else {
-                    searchResCurApp = 0;
-                }
-                updateSolrSearchPagePos();
-
-                logPagingToolbar.enable();
-
-                printNewPage();
-                facetsPanel.enable();
-            },
-            failure: function (result, request) {
-                Ext.MessageBox.alert('Failed', result.responseText);
-                facetsPanel.enable();
-            }
-        });
+            });
+            searchInProgress = false;
+        }
     };
 
     function addSearchResultToGrid() {
