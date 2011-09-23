@@ -825,7 +825,11 @@ Ext.onReady(function() {
                         query += facetFilter;
                     }
                     if(searchField.getValue()) {
-                        query += ' AND ' + searchField.getValue();
+                        if(query) {
+                            query += ' AND ';
+                        } else {
+                            query += searchField.getValue();
+                        }
                     }
                     clearText();
                     display.toggleSourceEdit(false);
@@ -859,7 +863,11 @@ Ext.onReady(function() {
                         query += facetFilter;
                     }
                     if(searchField.getValue()) {
-                        query += ' AND ' + searchField.getValue();
+                        if(query) {
+                            query += ' AND ';
+                        } else {
+                            query += searchField.getValue();
+                        }
                     }
                     clearText();
                     display.toggleSourceEdit(false);
@@ -972,6 +980,7 @@ Ext.onReady(function() {
                         bookmark = bookmark + "&ord=" + sortOrderCombo.getValue() + "&ordfield=" + sortFieldCombo.getValue();
                     }
                     linkField.setValue(bookmark);
+                    linkField.focus(true, true);
                 }
         }
     });
