@@ -1196,6 +1196,7 @@ Ext.onReady(function() {
 
     function doSolrSearch(query) {
         if(!searchInProgress){
+            searchBtn.disable();
             searchInProgress = true;
             searchRunning = true;
 
@@ -1237,7 +1238,6 @@ Ext.onReady(function() {
                     facetsPanel.enable();
                 }
             });
-            searchInProgress = false;
         }
     };
 
@@ -1249,7 +1249,9 @@ Ext.onReady(function() {
         var curIndex = searchSolrPos + index;
         if (index == 10 || solrSearchOccurrences.length == curIndex) {
             searchPagingToolbar.enable();
+            searchBtn.enable();
             searchResultsPanel.getView().select(searchResCurApp % 10);
+            searchInProgress = false;
             return;
         }
 
