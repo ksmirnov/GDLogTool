@@ -27,7 +27,6 @@ Ext.onReady(function() {
     var searchBytesToLightFromPrevPage = 0;
     var searchPageToLightFirstBytes = -1;
     var searchSolrPos = 0;
-    var searchCanGetNewPage = true;
     var searchLogTotalPages = 0;
     var contentFilter = '';
     var facetFilter = '';
@@ -1033,6 +1032,7 @@ Ext.onReady(function() {
 
     viewport.render(Ext.getBody());
     logPagingToolbar.disable();
+    searchPagingToolbar.disable();
     
     Ext.TaskManager.start({
         run: updateLog,
@@ -1059,32 +1059,39 @@ Ext.onReady(function() {
     }
 
     function prevSearchPage() {
-        if (searchSolrPos > 9 && searchCanGetNewPage) {
-            searchCanGetNewPage = false;
+        if (searchSolrPos > 9) {
+            searchPagingToolbar.disable();
             searchSolrPos = searchSolrPos - 10;
             searchGridStore.removeAll();
             updateNums();
             addOneRow(0);
+            searchResCurApp = searchResCurApp -1 - searchResCurApp % 10;
+            updateSolrSearchPagePos();
+            printNewPage();
         }
     }
 
     function nextSearchPage() {
-        if (searchSolrPos < solrSearchOccurrences.length - 10 && searchCanGetNewPage) {
-            searchCanGetNewPage = false;
+        if (searchSolrPos < solrSearchOccurrences.length - 10) {
+            searchPagingToolbar.disable();
             searchSolrPos = searchSolrPos + 10;
             searchGridStore.removeAll();
             updateNums();
             addOneRow(0);
+            searchResCurApp += (10 - searchResCurApp % 10);
+            updateSolrSearchPagePos();
+            printNewPage();
         }
     }
 
     function onCancel() {
         searchRunning = false;
-        var searchResApps = [];
-        var searchResPages = [];
+        searchResApps = [];
+        searchResPages = [];
         solrSearchOccurrences = [];
         searchField.setValue('');
         clearText();
+        searchPagingToolbar.disable();
         facetsStore.load();
     };
 
@@ -1100,7 +1107,7 @@ Ext.onReady(function() {
             facetsStore.load(operation);
             doSolrSearch(contentFilter);
         } else {
-            facetsStore.load();
+            onCancel();
         }
 
     };
@@ -1152,7 +1159,8 @@ Ext.onReady(function() {
     function addOneRow(index) {
         var curIndex = searchSolrPos + index;
         if (index == 10 || solrSearchOccurrences.length == curIndex) {
-            searchCanGetNewPage = true;
+            searchPagingToolbar.enable();
+            searchResultsPanel.getView().select(searchResCurApp % 10);
             return;
         }
 
@@ -1195,17 +1203,27 @@ Ext.onReady(function() {
 
     function next() {
         if (searchResCurApp + 1 != solrSearchOccurrences.length && searchRunning) {
-            searchResCurApp++;
-            updateSolrSearchPagePos();
-            printNewPage();
+            if((searchResCurApp + 1) % 10 == 0) {
+                nextSearchPage();
+            } else {
+                searchResCurApp++;
+                updateSolrSearchPagePos();
+                printNewPage();
+                searchResultsPanel.getView().select(searchResCurApp % 10);
+            }
         }
     };
 
     function prev() {
         if (searchResCurApp - 1 >= 0 && searchRunning) {
-            searchResCurApp--;
-            updateSolrSearchPagePos();
-            printNewPage();
+            if(searchResCurApp % 10 == 0) {
+                prevSearchPage();
+            } else {
+                searchResCurApp--;
+                updateSolrSearchPagePos();
+                printNewPage();
+                searchResultsPanel.getView().select(searchResCurApp % 10);
+            }
         }
     };
 
