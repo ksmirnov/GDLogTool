@@ -36,7 +36,7 @@
         <jodaTimeVersion>1.6.2</jodaTimeVersion>
         <logbackVersion>0.9.29</logbackVersion>
         <slf4jVersion>1.6.1</slf4jVersion>
-        <junitVersion>4.8.2</junitVersion>
+        <junitVersion>4.13.1</junitVersion>
         <nettyVersion>3.2.4.Final</nettyVersion>
         <log4jVersion>1.2.16</log4jVersion>
         <mockitoVersion>1.8.5</mockitoVersion>
