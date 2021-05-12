@@ -43,7 +43,7 @@
         <commonsEmailVersion>1.2</commonsEmailVersion>
         <commonsLangVersion>2.6</commonsLangVersion>
         <servletApiVersion>2.5</servletApiVersion>
-        <solrCoreVersion>3.3.0</solrCoreVersion>
+        <solrCoreVersion>8.8.2</solrCoreVersion>
         <solrjVersion>3.3.0</solrjVersion>
         <httpcomponentsVersion>4.1.2</httpcomponentsVersion>
         <fitnesseVersion>20110104</fitnesseVersion>
