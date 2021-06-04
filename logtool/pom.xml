@@ -45,7 +45,7 @@
         <servletApiVersion>2.5</servletApiVersion>
         <solrCoreVersion>3.3.0</solrCoreVersion>
         <solrjVersion>3.3.0</solrjVersion>
-        <httpcomponentsVersion>4.1.2</httpcomponentsVersion>
+        <httpcomponentsVersion>4.5.13</httpcomponentsVersion>
         <fitnesseVersion>20110104</fitnesseVersion>
         <fitlibraryVersion>20081102</fitlibraryVersion>
         <jsonsimpleVersion>1.1</jsonsimpleVersion>
