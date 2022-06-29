@@ -40,7 +40,7 @@
         <nettyVersion>3.2.4.Final</nettyVersion>
         <log4jVersion>1.2.16</log4jVersion>
         <mockitoVersion>1.8.5</mockitoVersion>
-        <commonsEmailVersion>1.2</commonsEmailVersion>
+        <commonsEmailVersion>1.5</commonsEmailVersion>
         <commonsLangVersion>2.6</commonsLangVersion>
         <servletApiVersion>2.5</servletApiVersion>
         <solrCoreVersion>3.3.0</solrCoreVersion>
