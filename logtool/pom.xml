@@ -32,7 +32,7 @@
     </pluginRepositories>
 
     <properties>
-        <springVersion>3.0.5.RELEASE</springVersion>
+        <springVersion>5.2.20.RELEASE</springVersion>
         <jodaTimeVersion>1.6.2</jodaTimeVersion>
         <logbackVersion>0.9.29</logbackVersion>
         <slf4jVersion>1.6.1</slf4jVersion>
